@@ -39,8 +39,8 @@
         address: document.getElementById('address').value.trim(),
         password: document.getElementById('password').value,
       };
-      try {
-         const res = await fetch(`${API_BASE_URL}/auth/register`, {
+        try {
+         const res = await fetch(`${API_BASE_URL}/auth/tenant/register`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         });
         const data = await res.json();
