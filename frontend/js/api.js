@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://rental-management-website.onrender.com/api';
 
 async function apiRequest(path, method = 'GET', body = null) {
   const token = localStorage.getItem('rentease_token');
