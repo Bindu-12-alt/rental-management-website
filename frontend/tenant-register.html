@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenant Register | RentEase</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span>🏠</span>
+        <div><h1>RentEase</h1><p>Tenant Registration</p></div>
+      </div>
+      <form id="registerForm" class="auth-form">
+        <div class="form-group"><label>Full Name</label><input id="fullName" type="text" placeholder="Your full name" required /></div>
+        <div class="form-group"><label>Email</label><input id="email" type="email" placeholder="your@email.com" required /></div>
+        <div class="form-group"><label>Phone</label><input id="phone" type="text" placeholder="Phone number" required /></div>
+        <div class="form-group"><label>Address</label><input id="address" type="text" placeholder="Your address" required /></div>
+        <div class="form-group"><label>Password</label><input id="password" type="password" placeholder="Create a password" required /></div>
+        <p id="registerError" class="form-error"></p>
+        <button type="submit" class="button primary full-width">Register</button>
+      </form>
+      <p style="margin-top:1rem; text-align:center; color:var(--muted);">Already have an account? <a href="tenant-login.html" style="color:var(--primary); font-weight:600;">Login</a></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('registerError');
+      errorEl.textContent = '';
+      const body = {
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        password: document.getElementById('password').value,
+      };
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/tenant/register', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+        localStorage.setItem('tenant_token', data.token);
+        localStorage.setItem('tenant_info', JSON.stringify(data.tenant));
+        window.location.href = 'pages/tenant-dashboard.html';
+      } catch (err) { errorEl.textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

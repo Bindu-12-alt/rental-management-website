@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vacating Requests | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Rental Admin</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a class="active" href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>Vacating Requests</h2><p>Approve or reject tenant move-out requests and manage final settlement.</p></div><div class="topbar-actions"><div class="topbar-search"><input id="searchInput" type="search" placeholder="Search requests" /><i class="fa-solid fa-magnifying-glass"></i></div><button class="button primary" id="createVacatingBtn">New Request</button></div></header>
+      <section class="filters-panel"><select id="statusFilter"><option value="">All Statuses</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Completed">Completed</option></select></section>
+      <section class="table-panel card"><table class="data-table"><thead><tr><th>Tenant</th><th>Apartment</th><th>Request Date</th><th>Vacating Date</th><th>Notice Days</th><th>Status</th><th>Actions</th></tr></thead><tbody id="vacatingTableBody"></tbody></table></section>
+      <section id="vacatingFormSection" class="card hidden"><div class="panel-header"><h3 id="vacatingFormTitle">New Vacating Request</h3></div><form id="vacatingForm" class="module-form"><div class="form-grid"><div class="form-group"><label>Tenant</label><select id="vacTenant" required><option value="">Select Tenant</option></select></div><div class="form-group"><label>Apartment</label><select id="vacApartment" required><option value="">Select Apartment</option></select></div><div class="form-group"><label>Request Date</label><input id="vacRequestDate" type="date" required /></div><div class="form-group"><label>Expected Vacating Date</label><input id="vacExpectedDate" type="date" required /></div><div class="form-group full-width"><label>Admin Comments</label><textarea id="vacComments"></textarea></div></div><div class="form-actions"><button type="submit" class="button primary">Submit Request</button><button type="button" id="cancelVacatingBtn" class="button outline">Cancel</button></div><p id="vacatingFormError" class="form-error"></p></form></section>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/vacating.js"></script>
+</body>
+</html>

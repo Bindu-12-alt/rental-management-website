@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a class="active" href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar">
+        <div><h2>Maintenance Requests</h2><p>Submit and track your maintenance requests.</p></div>
+        <div class="topbar-actions"><button class="button primary" id="newRequestBtn">New Request</button></div>
+      </header>
+
+      <section id="maintenanceFormSection" class="module-form card hidden">
+        <div class="panel-header"><h3>New Maintenance Request</h3></div>
+        <form id="maintenanceForm">
+          <div class="form-grid">
+            <div class="form-group"><label>Issue Title</label><input id="maintTitle" required /></div>
+            <div class="form-group"><label>Priority</label>
+              <select id="maintPriority"><option value="Low">Low</option><option value="Medium" selected>Medium</option><option value="High">High</option></select>
+            </div>
+            <div class="form-group full-width"><label>Description</label><textarea id="maintDescription" required></textarea></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="button primary">Submit</button>
+            <button type="button" class="button outline" id="cancelBtn">Cancel</button>
+          </div>
+          <p id="maintError" class="form-error"></p>
+        </form>
+      </section>
+
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead><tr><th>Title</th><th>Priority</th><th>Date</th><th>Status</th><th>Admin Comments</th></tr></thead>
+          <tbody id="maintenanceBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script>
+    tenantEnsureAuth();
+    document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    document.getElementById('newRequestBtn').addEventListener('click', () => document.getElementById('maintenanceFormSection').classList.remove('hidden'));
+    document.getElementById('cancelBtn').addEventListener('click', () => document.getElementById('maintenanceFormSection').classList.add('hidden'));
+
+    document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('maintError');
+      errorEl.textContent = '';
+      try {
+        await tenantRequest('/tenant-portal/maintenance', 'POST', {
+          title: document.getElementById('maintTitle').value.trim(),
+          description: document.getElementById('maintDescription').value.trim(),
+          priority: document.getElementById('maintPriority').value,
+        });
+        document.getElementById('maintenanceFormSection').classList.add('hidden');
+        document.getElementById('maintenanceForm').reset();
+        loadRequests();
+      } catch (err) { errorEl.textContent = err.message; }
+    });
+
+    async function loadRequests() {
+      const res = await tenantRequest('/tenant-portal/maintenance');
+      document.getElementById('maintenanceBody').innerHTML = res.data.map(r => `
+        <tr>
+          <td>${r.title}</td>
+          <td>${r.priority}</td>
+          <td>${r.requestDate.split('T')[0]}</td>
+          <td><span class="status-badge ${r.status.replace(' ','-').toLowerCase()}">${r.status}</span></td>
+          <td>${r.adminComments || '—'}</td>
+        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No requests found.</td></tr>';
+    }
+    loadRequests();
+  </script>
+</body>
+</html>

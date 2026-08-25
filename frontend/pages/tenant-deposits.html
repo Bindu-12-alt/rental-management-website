@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Deposit | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a class="active" href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>My Deposit</h2><p>View your security deposit and refund status.</p></div></header>
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead><tr><th>Apartment</th><th>Amount</th><th>Paid Date</th><th>Payment Status</th><th>Refund Amount</th><th>Refund Status</th></tr></thead>
+          <tbody id="depositsBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script>
+    tenantEnsureAuth();
+    document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    tenantRequest('/tenant-portal/deposits').then(res => {
+      document.getElementById('depositsBody').innerHTML = res.data.map(d => `
+        <tr>
+          <td>${d.apartment?.apartmentNumber || '—'}</td>
+          <td>₹${d.amount.toFixed(2)}</td>
+          <td>${d.paidDate.split('T')[0]}</td>
+          <td>${d.paymentStatus}</td>
+          <td>₹${(d.refundAmount || 0).toFixed(2)}</td>
+          <td>${d.refundStatus}</td>
+        </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No deposit records found.</td></tr>';
+    }).catch(console.error);
+  </script>
+</body>
+</html>

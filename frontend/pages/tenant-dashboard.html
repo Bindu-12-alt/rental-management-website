@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenant Dashboard | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🏠</span>
+        <div><h1>RentEase</h1><small>Tenant Portal</small></div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="active" href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar">
+        <div>
+          <h2>Welcome, <span id="tenantName">Tenant</span></h2>
+          <p>View your rental details and manage your requests.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="notificationBell" class="icon-button" onclick="window.location.href='tenant-notifications.html'">
+            <i class="fa-solid fa-bell"></i>
+            <span id="notificationBadge" class="badge hidden">0</span>
+          </button>
+          <div class="profile-pill"><i class="fa-solid fa-user"></i> <span id="profileName">Tenant</span></div>
+        </div>
+      </header>
+
+      <section class="dashboard-cards" id="tenantCards"></section>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
+        <section class="panel">
+          <div class="panel-header"><h3>My Apartment</h3></div>
+          <div id="apartmentInfo"><p style="color:var(--muted)">No apartment assigned yet.</p></div>
+        </section>
+        <section class="panel">
+          <div class="panel-header"><h3>Recent Notifications</h3></div>
+          <div id="recentNotifications"><p style="color:var(--muted)">No notifications.</p></div>
+        </section>
+      </div>
+
+      <section class="recent-activities" style="margin-top:1rem;">
+        <div class="panel-header"><h3>Recent Activity</h3></div>
+        <div id="recentHistory"></div>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script src="../js/tenant-dashboard.js"></script>
+</body>
+</html>

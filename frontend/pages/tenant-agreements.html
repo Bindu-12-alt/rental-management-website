@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Agreement | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a class="active" href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>My Agreement</h2><p>View your rental agreement details.</p></div></header>
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead><tr><th>Agreement ID</th><th>Apartment</th><th>Start Date</th><th>Expiry Date</th><th>Monthly Rent</th><th>Cycle</th><th>Status</th></tr></thead>
+          <tbody id="agreementsBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script>
+    tenantEnsureAuth();
+    document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    tenantRequest('/tenant-portal/agreements').then(res => {
+      document.getElementById('agreementsBody').innerHTML = res.data.map(a => `
+        <tr>
+          <td>${a.agreementId}</td>
+          <td>${a.apartment?.apartmentNumber || '—'}</td>
+          <td>${a.startDate.split('T')[0]}</td>
+          <td>${a.expiryDate.split('T')[0]}</td>
+          <td>₹${a.monthlyRent.toFixed(2)}</td>
+          <td>${a.rentalCycle}</td>
+          <td><span class="status-badge ${a.status.replace(' ','-').toLowerCase()}">${a.status}</span></td>
+        </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No agreements found.</td></tr>';
+    }).catch(console.error);
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rental Agreements | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Rental Admin</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a class="active" href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>Rental Agreements</h2><p>View, renew, or manage rental contracts.</p></div><div class="topbar-actions"><div class="topbar-search"><input id="searchInput" type="search" placeholder="Search agreements" /><i class="fa-solid fa-magnifying-glass"></i></div><button class="button primary" id="createAgreementBtn">New Agreement</button></div></header>
+      <section class="filters-panel"><select id="statusFilter"><option value="">All Statuses</option><option value="Active">Active</option><option value="Expiring Soon">Expiring Soon</option><option value="Expired">Expired</option><option value="Ending">Ending</option></select></section>
+      <section class="table-panel card"><table class="data-table"><thead><tr><th>ID</th><th>Tenant</th><th>Apartment</th><th>Start</th><th>Expiry</th><th>Status</th><th>Rent</th><th>Actions</th></tr></thead><tbody id="agreementsTableBody"></tbody></table></section>
+      <section id="agreementFormSection" class="card hidden"><div class="panel-header"><h3 id="agreementFormTitle">New Agreement</h3></div><form id="agreementForm" class="module-form"><div class="form-grid"><div class="form-group"><label>Agreement ID</label><input id="agrId" required /></div><div class="form-group"><label>Tenant</label><select id="agrTenant" required><option value="">Select Tenant</option></select></div><div class="form-group"><label>Apartment</label><select id="agrApartment" required><option value="">Select Apartment</option></select></div><div class="form-group"><label>Start Date</label><input id="agrStart" type="date" required /></div><div class="form-group"><label>Expiry Date</label><input id="agrExpiry" type="date" required /></div><div class="form-group"><label>Rental Cycle</label><select id="agrCycle" required><option value="Monthly">Monthly</option><option value="Quarterly">Quarterly</option><option value="Yearly">Yearly</option></select></div><div class="form-group"><label>Monthly Rent (₹)</label><input id="agrRent" type="number" min="0" required /></div><div class="form-group full-width"><label>Agreement Details</label><textarea id="agrDetails"></textarea></div></div><div class="form-actions"><button type="submit" class="button primary">Save Agreement</button><button type="button" id="cancelAgreementBtn" class="button outline">Cancel</button></div><p id="agreementFormError" class="form-error"></p></form></section>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/agreements.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenants | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🏠</span>
+        <div>
+          <h1>RentEase</h1>
+          <small>Rental Admin</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a class="active" href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+
+    <main class="content-area">
+      <header class="topbar">
+        <div>
+          <h2>Tenants</h2>
+          <p>Track tenant profiles, current apartments, and rental history.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-search">
+            <input id="searchInput" type="search" placeholder="Search by tenant name, email, phone" />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <button class="button primary" id="createTenantBtn">Add Tenant</button>
+        </div>
+      </header>
+
+      <section class="filters-panel">
+        <select id="statusFilter">
+          <option value="">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Former">Former</option>
+        </select>
+      </section>
+
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Address</th>
+              <th>Apartment</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tenantsTableBody"></tbody>
+        </table>
+      </section>
+
+      <section id="tenantFormSection" class="card hidden">
+        <div class="panel-header"><h3 id="tenantFormTitle">Add Tenant</h3></div>
+        <form id="tenantForm" class="module-form">
+          <div class="form-grid">
+            <div class="form-group"><label>Full Name</label><input id="tenantName" required /></div>
+            <div class="form-group"><label>Email</label><input id="tenantEmail" type="email" required /></div>
+            <div class="form-group"><label>Phone</label><input id="tenantPhone" required /></div>
+            <div class="form-group"><label>Address</label><input id="tenantAddress" required /></div>
+            <div class="form-group"><label>Identification</label><input id="tenantId" /></div>
+            <div class="form-group"><label>Emergency Contact</label><input id="tenantEmergency" /></div>
+            <div class="form-group"><label>Apartment</label><select id="tenantApartment"><option value="">No Apartment</option></select></div>
+            <div class="form-group"><label>Rental Start Date</label><input id="tenantStartDate" type="date" /></div>
+            <div class="form-group"><label>Status</label><select id="tenantStatus"><option value="Active">Active</option><option value="Former">Former</option></select></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="button primary">Save Tenant</button>
+            <button type="button" id="cancelTenantBtn" class="button outline">Cancel</button>
+          </div>
+          <p id="tenantFormError" class="form-error"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/tenants.js"></script>
+</body>
+</html>

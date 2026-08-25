@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register | RentEase</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span>🏠</span>
+        <div>
+          <h1>RentEase</h1>
+          <p>Create Admin Account</p>
+        </div>
+      </div>
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input id="name" type="text" placeholder="Your name" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" value="bindusrikavuri@gmail.com" readonly style="background:#f5ede4; color:var(--muted);" />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="Create a password" required />
+        </div>
+        <p id="registerError" class="form-error"></p>
+        <button type="submit" class="button primary full-width">Register</button>
+      </form>
+      <p style="margin-top:1rem; text-align:center; color:var(--muted);">
+        Already have an account? <a href="login.html" style="color:var(--primary); font-weight:600;">Login</a>
+      </p>
+    </div>
+  </div>
+  <script src="js/api.js"></script>
+  <script>
+    async function checkRegistrationAllowed() {
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const data = await response.json();
+        if (response.status === 403) {
+          document.getElementById('registerForm').classList.add('hidden');
+          document.getElementById('registerError').textContent = 'Admin account already exists. Please login instead.';
+        }
+      } catch (e) {}
+    }
+    checkRegistrationAllowed();
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorEl = document.getElementById('registerError');
+      errorEl.textContent = '';
+
+      try {
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Registration failed');
+        localStorage.setItem('rentease_token', data.token);
+        localStorage.setItem('rentease_admin', JSON.stringify(data.admin));
+        window.location.href = 'pages/dashboard.html';
+      } catch (error) {
+        errorEl.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>

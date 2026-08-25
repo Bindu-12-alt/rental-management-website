@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apartments | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🏠</span>
+        <div>
+          <h1>RentEase</h1>
+          <small>Rental Admin</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a class="active" href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+
+    <main class="content-area">
+      <header class="topbar">
+        <div>
+          <h2>Apartments</h2>
+          <p>Manage apartment inventory, status, and assignments.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-search">
+            <input id="searchInput" type="search" placeholder="Search by number, building, floor" />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <button class="button primary" id="createApartmentBtn">Add Apartment</button>
+        </div>
+      </header>
+
+      <section class="filters-panel">
+        <select id="statusFilter">
+          <option value="">All Statuses</option>
+          <option value="Empty">Empty</option>
+          <option value="Occupied">Occupied</option>
+          <option value="Vacating Soon">Vacating Soon</option>
+        </select>
+        <select id="typeFilter">
+          <option value="">All Types</option>
+          <option value="Studio">Studio</option>
+          <option value="1BHK">1BHK</option>
+          <option value="2BHK">2BHK</option>
+        </select>
+      </section>
+
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Apartment</th>
+              <th>Building</th>
+              <th>Floor</th>
+              <th>Type</th>
+              <th>Rent</th>
+              <th>Deposit</th>
+              <th>Status</th>
+              <th>Tenant</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="apartmentsTableBody"></tbody>
+        </table>
+      </section>
+
+      <section id="apartmentFormSection" class="card hidden">
+        <div class="panel-header"><h3 id="apartmentFormTitle">Add Apartment</h3></div>
+        <form id="apartmentForm" class="module-form">
+          <div class="form-grid">
+            <div class="form-group"><label>Apartment Number</label><input id="aptNumber" required /></div>
+            <div class="form-group"><label>Building Details</label><input id="aptBuilding" required /></div>
+            <div class="form-group"><label>Floor Details</label><input id="aptFloor" required /></div>
+            <div class="form-group"><label>Type</label><select id="aptType" required><option value="">Select</option><option value="Studio">Studio</option><option value="1BHK">1BHK</option><option value="2BHK">2BHK</option></select></div>
+            <div class="form-group"><label>Monthly Rent</label><input id="aptRent" type="number" min="0" required /></div>
+            <div class="form-group"><label>Security Deposit</label><input id="aptDeposit" type="number" min="0" required /></div>
+            <div class="form-group"><label>Status</label><select id="aptStatus"><option value="Empty">Empty</option><option value="Occupied">Occupied</option><option value="Vacating Soon">Vacating Soon</option></select></div>
+            <div class="form-group full-width"><label>Policies / Notes</label><textarea id="aptPolicies"></textarea></div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="button primary">Save Apartment</button>
+            <button type="button" id="cancelAptBtn" class="button outline">Cancel</button>
+          </div>
+          <p id="apartmentFormError" class="form-error"></p>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/apartments.js"></script>
+</body>
+</html>

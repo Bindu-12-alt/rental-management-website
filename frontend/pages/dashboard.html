@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span>🏠</span>
+        <div>
+          <h1>RentEase</h1>
+          <small>Rental Admin</small>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="active" href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+
+    <main class="content-area">
+      <header class="topbar">
+        <div>
+          <h2>Dashboard</h2>
+          <p>Welcome back, admin. Review property operations and latest updates.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-search">
+            <input id="globalSearch" type="search" placeholder="Search..." />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <button id="notificationBell" class="icon-button"><i class="fa-solid fa-bell"></i><span id="notificationBadge" class="badge hidden">0</span></button>
+          <div class="profile-pill"><i class="fa-solid fa-user"></i> Admin</div>
+        </div>
+      </header>
+
+      <section class="dashboard-cards" id="dashboardCards"></section>
+
+      <section class="dashboard-panels">
+        <div class="panel card">
+          <div class="panel-header"><h3>Occupancy Overview</h3></div>
+          <canvas id="occupancyChart"></canvas>
+        </div>
+        <div class="panel card">
+          <div class="panel-header"><h3>Payment Status</h3></div>
+          <canvas id="paymentChart"></canvas>
+        </div>
+      </section>
+
+      <section class="recent-activities card">
+        <div class="panel-header"><h3>Recent Activities</h3></div>
+        <div id="recentActivities"></div>
+      </section>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/dashboard.js"></script>
+</body>
+</html>

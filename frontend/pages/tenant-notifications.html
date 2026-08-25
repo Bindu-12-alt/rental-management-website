@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a class="active" href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>Notifications</h2><p>Your alerts and updates.</p></div></header>
+      <section class="recent-activities card">
+        <div id="notificationsList"><p style="color:var(--muted); padding:1rem;">No notifications.</p></div>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script>
+    tenantEnsureAuth();
+    document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    tenantRequest('/tenant-portal/notifications').then(res => {
+      if (!res.data.length) return;
+      document.getElementById('notificationsList').innerHTML = res.data.map(n => `
+        <div class="activity-row">
+          <div><strong>${n.type}</strong><p>${n.message}</p></div>
+          <div class="activity-meta">
+            <span class="status-badge ${n.priority.toLowerCase()}">${n.priority}</span>
+            <small>${new Date(n.createdAt).toLocaleString()}</small>
+            ${!n.read ? `<button class="button small" onclick="markRead('${n._id}')">Mark Read</button>` : '<span style="color:var(--success)">✓ Read</span>'}
+          </div>
+        </div>`).join('');
+    }).catch(console.error);
+
+    window.markRead = async (id) => {
+      await tenantRequest(`/tenant-portal/notifications/${id}/read`, 'PUT');
+      location.reload();
+    };
+  </script>
+</body>
+</html>

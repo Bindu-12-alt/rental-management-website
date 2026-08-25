@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenant Login | RentEase</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <span>🏠</span>
+        <div><h1>RentEase</h1><p>Tenant Login</p></div>
+      </div>
+      <form id="loginForm" class="auth-form">
+        <div class="form-group"><label>Email</label><input id="email" type="email" placeholder="your@email.com" required /></div>
+        <div class="form-group"><label>Password</label><input id="password" type="password" placeholder="Your password" required /></div>
+        <p id="loginError" class="form-error"></p>
+        <button type="submit" class="button primary full-width">Login</button>
+      </form>
+      <p style="margin-top:1rem; text-align:center; color:var(--muted);">Don't have an account? <a href="tenant-register.html" style="color:var(--primary); font-weight:600;">Register</a></p>
+      <p style="margin-top:0.5rem; text-align:center; color:var(--muted); font-size:0.9rem;">Are you the owner? <a href="login.html" style="color:var(--primary);">Owner Login</a></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('loginError');
+      errorEl.textContent = '';
+      const body = {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      };
+      try {
+        const res = await fetch('http://localhost:5000/api/auth/tenant/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+        localStorage.setItem('tenant_token', data.token);
+        localStorage.setItem('tenant_info', JSON.stringify(data.tenant));
+        window.location.href = 'pages/tenant-dashboard.html';
+      } catch (err) { errorEl.textContent = err.message; }
+    });
+  </script>
+</body>
+</html>

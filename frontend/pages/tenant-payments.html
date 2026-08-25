@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Payments | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a class="active" href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>My Payments</h2><p>View all your rent payment records.</p></div></header>
+      <section class="table-panel card">
+        <table class="data-table">
+          <thead><tr><th>Apartment</th><th>Amount</th><th>Due Date</th><th>Payment Date</th><th>Method</th><th>Status</th></tr></thead>
+          <tbody id="paymentsBody"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script>
+    tenantEnsureAuth();
+    document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    tenantRequest('/tenant-portal/payments').then(res => {
+      document.getElementById('paymentsBody').innerHTML = res.data.map(p => `
+        <tr>
+          <td>${p.apartment?.apartmentNumber || '—'}</td>
+          <td>₹${p.amount.toFixed(2)}</td>
+          <td>${p.dueDate.split('T')[0]}</td>
+          <td>${p.paymentDate.split('T')[0]}</td>
+          <td>${p.method}</td>
+          <td><span class="status-badge ${p.status.toLowerCase()}">${p.status}</span></td>
+        </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No payments found.</td></tr>';
+    }).catch(console.error);
+  </script>
+</body>
+</html>

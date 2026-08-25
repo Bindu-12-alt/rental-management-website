@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maintenance Requests | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Rental Admin</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="payments.html"><i class="fa-solid fa-money-bill-wave"></i> Payments</a>
+        <a href="deposits.html"><i class="fa-solid fa-wallet"></i> Security Deposits</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a class="active" href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar"><div><h2>Maintenance Requests</h2><p>Manage issue reports and completion status.</p></div><div class="topbar-actions"><div class="topbar-search"><input id="searchInput" type="search" placeholder="Search maintenance" /><i class="fa-solid fa-magnifying-glass"></i></div><button class="button primary" id="createMaintenanceBtn">New Request</button></div></header>
+      <section class="filters-panel"><select id="statusFilter"><option value="">All Statuses</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Rejected">Rejected</option></select></section>
+      <section class="table-panel card"><table class="data-table"><thead><tr><th>Apartment</th><th>Tenant</th><th>Issue</th><th>Priority</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="maintenanceTableBody"></tbody></table></section>
+      <section id="maintenanceFormSection" class="card hidden"><div class="panel-header"><h3 id="maintenanceFormTitle">New Maintenance Request</h3></div><form id="maintenanceForm" class="module-form"><div class="form-grid"><div class="form-group"><label>Apartment</label><select id="maintApartment" required><option value="">Select Apartment</option></select></div><div class="form-group"><label>Tenant</label><select id="maintTenant" required><option value="">Select Tenant</option></select></div><div class="form-group"><label>Issue Title</label><input id="maintTitle" required /></div><div class="form-group"><label>Description</label><textarea id="maintDescription" required></textarea></div><div class="form-group"><label>Priority</label><select id="maintPriority"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select></div><div class="form-group"><label>Request Date</label><input id="maintDate" type="date" required /></div></div><div class="form-actions"><button type="submit" class="button primary">Save Request</button><button type="button" id="cancelMaintenanceBtn" class="button outline">Cancel</button></div><p id="maintenanceFormError" class="form-error"></p></form></section>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/maintenance.js"></script>
+</body>
+</html>
