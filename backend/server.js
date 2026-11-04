@@ -24,18 +24,25 @@ const { errorHandler } = require('./middleware/errorMiddleware');
 const app = express();
 
 // ── CORS ───────────────────────────────────────────────────────────────────────
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5000',
-  process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
+const configuredOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_ORIGIN,
+].filter(Boolean).flatMap((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean));
+const allowedOrigins = new Set([
+  ...configuredOrigins,
+  'https://rental-management-website-psi.vercel.app',
+  'https://rental-management-website-git-main-bindu-12-alts-projects.vercel.app',
+  'https://rental-management-website-nagj7620m-bindu-12-alts-projects.vercel.app',
   'http://localhost:5500',
   'http://127.0.0.1:5500',
   'http://localhost:5000',
-];
+  'http://localhost:3000',
+]);
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
     // In development, allow all origins
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
     callback(new Error(`CORS: ${origin} not allowed`));
