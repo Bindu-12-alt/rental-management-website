@@ -30,6 +30,7 @@ const configuredOrigins = [
 ].filter(Boolean).flatMap((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean));
 const allowedOrigins = new Set([
   ...configuredOrigins,
+  'https://rentease-m4ev.onrender.com',
   'https://rental-management-website-psi.vercel.app',
   'https://rental-management-website-git-main-bindu-12-alts-projects.vercel.app',
   'https://rental-management-website-nagj7620m-bindu-12-alts-projects.vercel.app',
