@@ -23,9 +23,11 @@ async function loadDashboard() {
       { label: 'Empty Apartments', value: stats.emptyApartments, icon: 'fa-door-open', color: 'gray' },
       { label: 'Vacating Soon', value: stats.vacatingSoon, icon: 'fa-hourglass-half', color: 'warning' },
       { label: 'Total Tenants', value: stats.totalTenants, icon: 'fa-users', color: 'blue' },
+      { label: 'Paid Rent', value: stats.paidRent, icon: 'fa-circle-check', color: 'success' },
       { label: 'Pending Rent', value: stats.pendingRent, icon: 'fa-clock', color: 'warning' },
       { label: 'Overdue Rent', value: stats.overdueRent, icon: 'fa-triangle-exclamation', color: 'danger' },
       { label: 'Upcoming Renewals', value: stats.upcomingRenewals, icon: 'fa-calendar-days', color: 'blue' },
+      { label: 'Pending Maintenance', value: stats.pendingMaintenance, icon: 'fa-screwdriver-wrench', color: 'warning' },
       { label: 'Pending Vacating', value: stats.pendingVacatingRequests, icon: 'fa-clipboard-list', color: 'warning' },
       { label: 'Pending Deposit Refunds', value: stats.pendingDepositRefunds, icon: 'fa-hand-holding-dollar', color: 'success' },
     ];
@@ -85,13 +87,14 @@ function renderCharts(stats) {
     });
   }
   if (paymentCtx) {
+    // FIX: Was hardcoded 0 for 'Paid' — now uses real stats.paidRent
     new Chart(paymentCtx, {
       type: 'bar',
       data: {
         labels: ['Paid', 'Pending', 'Overdue'],
-        datasets: [{ data: [0, stats.pendingRent, stats.overdueRent], backgroundColor: ['#16A34A', '#F59E0B', '#DC2626'] }],
+        datasets: [{ data: [stats.paidRent || 0, stats.pendingRent, stats.overdueRent], backgroundColor: ['#16A34A', '#F59E0B', '#DC2626'] }],
       },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } },
+      options: { responsive: true, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } },
     });
   }
 }

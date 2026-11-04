@@ -10,40 +10,98 @@
 <body>
   <div class="auth-container">
     <div class="auth-card">
-      <div class="auth-brand">
-        <span>🏠</span>
-        <div><h1>RentEase</h1><p>Tenant Login</p></div>
+      <a href="/" class="auth-brand" style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;text-decoration:none">
+        <span style="font-size:2rem">🏠</span>
+        <div>
+          <h1 style="margin:0;font-size:1.4rem;color:var(--primary-dark,#4A2000)">RentEase</h1>
+          <p style="margin:0;color:var(--muted);font-size:0.875rem">Tenant Portal</p>
+        </div>
+      </a>
+
+      <div class="google-auth">
+        <div id="googleSignInButton" class="google-auth-button"></div>
+        <p id="googleAuthStatus" class="google-auth-status" role="status" aria-live="polite">Choose a Google account; closing the sign-in window cancels.</p>
+        <p id="googleAuthError" class="google-auth-error hidden" role="alert"></p>
       </div>
-      <form id="loginForm" class="auth-form">
-        <div class="form-group"><label>Email</label><input id="email" type="email" placeholder="your@email.com" required /></div>
-        <div class="form-group"><label>Password</label><input id="password" type="password" placeholder="Your password" required /></div>
-        <p id="loginError" class="form-error"></p>
-        <button type="submit" class="button primary full-width">Login</button>
+      <div class="auth-divider" aria-hidden="true"><span>OR</span></div>
+
+      <form id="loginForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input id="email" type="email" placeholder="you@email.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div style="position:relative">
+            <input id="password" type="password" placeholder="Your password" required autocomplete="current-password" style="width:100%;padding-right:48px" />
+            <button type="button" id="togglePwd" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">
+              <i class="fa-solid fa-eye" id="togglePwdIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <p id="loginError" class="form-error hidden"></p>
+
+        <button type="submit" class="button primary" style="width:100%;justify-content:center;margin-top:0.5rem" id="submitBtn">
+          <i class="fa-solid fa-sign-in-alt"></i> Sign In
+        </button>
       </form>
-      <p style="margin-top:1rem; text-align:center; color:var(--muted);">Don't have an account? <a href="tenant-register.html" style="color:var(--primary); font-weight:600;">Register</a></p>
-      <p style="margin-top:0.5rem; text-align:center; color:var(--muted); font-size:0.9rem;">Are you the owner? <a href="login.html" style="color:var(--primary);">Owner Login</a></p>
+
+      <p style="margin-top:1.5rem; text-align:center; color:var(--muted); font-size:0.9rem">
+        Don't have an account? <a href="tenant-register.html" style="color:var(--primary); font-weight:600;">Register Here</a>
+      </p>
+      <p style="text-align:center; color:var(--muted); font-size:0.85rem; margin-top:0.5rem">
+        Property manager? <a href="login.html" style="color:var(--primary);">Admin Login</a>
+      </p>
     </div>
-    </div>
+  </div>
+
   <script src="js/api.js"></script>
+  <script src="js/google-auth.js"></script>
+  <script>initializeGoogleSignIn({ role: 'tenant', destination: 'pages/tenant-dashboard.html' });</script>
   <script>
+    // Toggle password visibility
+    document.getElementById('togglePwd').addEventListener('click', () => {
+      const pwdInput = document.getElementById('password');
+      const icon = document.getElementById('togglePwdIcon');
+      const isVisible = pwdInput.type === 'text';
+      pwdInput.type = isVisible ? 'password' : 'text';
+      icon.className = isVisible ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    });
+
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('loginError');
-      errorEl.textContent = '';
-      const body = {
-        email: document.getElementById('email').value.trim(),
-        password: document.getElementById('password').value,
-      };
+      const submitBtn = document.getElementById('submitBtn');
+      errorEl.classList.add('hidden');
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      if (!email || !password) {
+        errorEl.textContent = 'Email and password are required.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in…';
+
       try {
-         const res = await fetch(`${API_BASE_URL}/auth/tenant/login`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        const res = await fetch(`${API_BASE_URL}/auth/tenant/login`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Login failed');
         localStorage.setItem('tenant_token', data.token);
         localStorage.setItem('tenant_info', JSON.stringify(data.tenant));
         window.location.href = 'pages/tenant-dashboard.html';
-      } catch (err) { errorEl.textContent = err.message; }
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-sign-in-alt"></i> Sign In';
+      }
     });
   </script>
 </body>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Notifications | RentEase</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/tenant-dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -17,40 +18,109 @@
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
-        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
         <a class="active" href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
         <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
       </nav>
     </aside>
     <main class="content-area">
-      <header class="topbar"><div><h2>Notifications</h2><p>Your alerts and updates.</p></div></header>
-      <section class="recent-activities card">
-        <div id="notificationsList"><p style="color:var(--muted); padding:1rem;">No notifications.</p></div>
+      <header class="topbar">
+        <div><h2>Notifications</h2><p>Your alerts, reminders, and updates.</p></div>
+        <div class="topbar-actions">
+          <button class="button small outline" id="markAllReadBtn"><i class="fa-solid fa-check-double"></i> Mark All Read</button>
+        </div>
+      </header>
+
+      <section class="card" style="padding:0;overflow:hidden">
+        <div class="panel-header" style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--border)">
+          <h3>All Notifications</h3>
+          <span id="unreadCount" style="font-size:13px;color:var(--muted)"></span>
+        </div>
+        <div id="notificationsList" style="min-height:200px">
+          <p style="color:var(--muted);padding:2rem;text-align:center">Loading…</p>
+        </div>
       </section>
     </main>
   </div>
+
   <script src="../js/tenant-api.js"></script>
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
-    tenantRequest('/tenant-portal/notifications').then(res => {
-      if (!res.data.length) return;
-      document.getElementById('notificationsList').innerHTML = res.data.map(n => `
-        <div class="activity-row">
-          <div><strong>${n.type}</strong><p>${n.message}</p></div>
-          <div class="activity-meta">
-            <span class="status-badge ${n.priority.toLowerCase()}">${n.priority}</span>
-            <small>${new Date(n.createdAt).toLocaleString()}</small>
-            ${!n.read ? `<button class="button small" onclick="markRead('${n._id}')">Mark Read</button>` : '<span style="color:var(--success)">✓ Read</span>'}
-          </div>
-        </div>`).join('');
-    }).catch(console.error);
+
+    const priorityIcon = { High: 'fa-triangle-exclamation', Medium: 'fa-circle-info', Low: 'fa-circle-dot' };
+    const priorityColor = { High: '#DC2626', Medium: '#F59E0B', Low: '#64748B' };
+    const typeIcon = {
+      'Maintenance Request': 'fa-wrench',
+      'Maintenance Updated': 'fa-screwdriver-wrench',
+      'Rent Due': 'fa-money-bill-wave',
+      'Overdue Payment': 'fa-triangle-exclamation',
+      'Agreement Renewal': 'fa-file-contract',
+      'Vacating Request': 'fa-door-open',
+      'Vacating Approved': 'fa-circle-check',
+      'Tenant Message': 'fa-message',
+    };
+
+    async function loadNotifications() {
+      try {
+        const res = await tenantRequest('/tenant-portal/notifications');
+        const list = document.getElementById('notificationsList');
+        const countEl = document.getElementById('unreadCount');
+        const unread = res.unreadCount || 0;
+        if (countEl) countEl.textContent = unread > 0 ? `${unread} unread` : 'All read';
+
+        if (!res.data.length) {
+          list.innerHTML = '<p style="color:var(--muted);padding:2rem;text-align:center"><i class="fa-solid fa-bell-slash" style="margin-right:8px"></i>No notifications yet.</p>';
+          return;
+        }
+        list.innerHTML = res.data.map(n => {
+          const icon = typeIcon[n.type] || 'fa-bell';
+          const color = priorityColor[n.priority] || '#64748B';
+          const isUnread = !n.read;
+          return `
+            <div class="notification-item ${isUnread ? 'unread' : ''}" id="notif-${n._id}">
+              <div style="width:40px;height:40px;border-radius:12px;background:${color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <i class="fa-solid ${icon}" style="color:${color}"></i>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <strong style="font-size:14px">${n.type}</strong>
+                  <span class="status-badge" style="background:${color};font-size:11px">${n.priority}</span>
+                  ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block"></span>' : ''}
+                </div>
+                <p style="font-size:14px;color:var(--muted);margin:4px 0">${n.message}</p>
+                <small style="color:var(--muted)">${new Date(n.createdAt).toLocaleString()}</small>
+              </div>
+              ${isUnread ? `<button class="button small outline" onclick="markRead('${n._id}')">Mark Read</button>` : '<span style="color:var(--success);font-size:13px"><i class="fa-solid fa-check"></i></span>'}
+            </div>`;
+        }).join('');
+      } catch (err) {
+        document.getElementById('notificationsList').innerHTML = `<p style="color:var(--danger);padding:2rem;text-align:center">${err.message}</p>`;
+      }
+    }
 
     window.markRead = async (id) => {
-      await tenantRequest(`/tenant-portal/notifications/${id}/read`, 'PUT');
-      location.reload();
+      try {
+        await tenantRequest(`/tenant-portal/notifications/${id}/read`, 'PUT');
+        const item = document.getElementById(`notif-${id}`);
+        if (item) {
+          item.classList.remove('unread');
+          const btn = item.querySelector('button');
+          if (btn) btn.replaceWith(Object.assign(document.createElement('span'), { innerHTML: '<i class="fa-solid fa-check"></i>', style: 'color:var(--success);font-size:13px' }));
+        }
+        loadNotifications();
+      } catch (err) { alert(err.message); }
     };
+
+    document.getElementById('markAllReadBtn').addEventListener('click', async () => {
+      try {
+        await tenantRequest('/tenant-portal/notifications/mark-all-read', 'PUT');
+        loadNotifications();
+      } catch (err) { alert(err.message); }
+    });
+
+    loadNotifications();
   </script>
 </body>
 </html>

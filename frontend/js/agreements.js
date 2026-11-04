@@ -118,7 +118,8 @@ window.renewAgreement = async function (id) {
   if (!newRent) return;
   const newCycle = prompt('Rental cycle (e.g. Monthly):') || 'Monthly';
   try {
-    await apiRequest(`/agreements/${id}/renew`, 'PUT', { newExpiryDate: newExpiry, newMonthlyRent: Number(newRent), newRentalCycle: newCycle });
+    // FIX: Route is POST /:id/renew (was incorrectly using PUT)
+    await apiRequest(`/agreements/${id}/renew`, 'POST', { newExpiryDate: newExpiry, newMonthlyRent: Number(newRent), newRentalCycle: newCycle });
     alert('Agreement renewed successfully!');
     loadAgreements();
   } catch (error) { alert(error.message); }

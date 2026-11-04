@@ -65,7 +65,8 @@ async function submitDepositForm(event) {
   }
   try {
     if (editingDepositId) {
-      await apiRequest(`/deposits/${editingDepositId}/refund`, 'PUT', data);
+      // FIX: Use update endpoint, not refund endpoint, when editing
+      await apiRequest(`/deposits/${editingDepositId}`, 'PUT', data);
     } else {
       await apiRequest('/deposits', 'POST', data);
     }

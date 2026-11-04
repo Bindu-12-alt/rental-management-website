@@ -3,35 +3,93 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tenant Register | RentEase</title>
+  <title>Tenant Registration | RentEase</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <span>🏠</span>
-        <div><h1>RentEase</h1><p>Tenant Registration</p></div>
+    <div class="auth-card" style="max-width:520px">
+      <a href="/" class="auth-brand" style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;text-decoration:none">
+        <span style="font-size:2rem">🏠</span>
+        <div>
+          <h1 style="margin:0;font-size:1.4rem;color:var(--primary-dark,#4A2000)">RentEase</h1>
+          <p style="margin:0;color:var(--muted);font-size:0.875rem">Create Your Tenant Account</p>
+        </div>
+      </a>
+
+      <div class="google-auth">
+        <div id="googleSignInButton" class="google-auth-button"></div>
+        <p id="googleAuthStatus" class="google-auth-status" role="status" aria-live="polite">Choose a Google account; closing the sign-in window cancels.</p>
+        <p id="googleAuthError" class="google-auth-error hidden" role="alert"></p>
       </div>
-      <form id="registerForm" class="auth-form">
-        <div class="form-group"><label>Full Name</label><input id="fullName" type="text" placeholder="Your full name" required /></div>
-        <div class="form-group"><label>Email</label><input id="email" type="email" placeholder="your@email.com" required /></div>
-        <div class="form-group"><label>Phone</label><input id="phone" type="text" placeholder="Phone number" required /></div>
-        <div class="form-group"><label>Address</label><input id="address" type="text" placeholder="Your address" required /></div>
-        <div class="form-group"><label>Password</label><input id="password" type="password" placeholder="Create a password" required /></div>
-        <p id="registerError" class="form-error"></p>
-        <button type="submit" class="button primary full-width">Register</button>
+      <div class="auth-divider" aria-hidden="true"><span>OR</span></div>
+
+      <form id="registerForm" class="auth-form" novalidate>
+        <div class="form-group">
+          <label>Full Name <span style="color:var(--danger)">*</span></label>
+          <input id="fullName" type="text" placeholder="Your full name" required autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label>Email Address <span style="color:var(--danger)">*</span></label>
+          <input id="email" type="email" placeholder="you@email.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Phone Number <span style="color:var(--danger)">*</span></label>
+          <input id="phone" type="tel" placeholder="+91 98765 43210" required autocomplete="tel" />
+        </div>
+        <div class="form-group">
+          <label>Current Address</label>
+          <input id="address" type="text" placeholder="Your current address (optional)" autocomplete="street-address" />
+        </div>
+        <div class="form-group">
+          <label>Password <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative">
+            <input id="password" type="password" placeholder="At least 6 characters" required autocomplete="new-password" style="width:100%;padding-right:48px" />
+            <button type="button" id="togglePwd" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted)">
+              <i class="fa-solid fa-eye" id="togglePwdIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <p id="registerError" class="form-error hidden"></p>
+        <p id="registerSuccess" class="form-success hidden"><i class="fa-solid fa-circle-check"></i> Account created! Redirecting to dashboard…</p>
+
+        <button type="submit" class="button primary" style="width:100%;justify-content:center;margin-top:0.5rem" id="submitBtn">
+          <i class="fa-solid fa-user-plus"></i> Create Account
+        </button>
       </form>
-      <p style="margin-top:1rem; text-align:center; color:var(--muted);">Already have an account? <a href="tenant-login.html" style="color:var(--primary); font-weight:600;">Login</a></p>
+
+      <p style="margin-top:1.5rem; text-align:center; color:var(--muted); font-size:0.9rem">
+        Already have an account? <a href="tenant-login.html" style="color:var(--primary); font-weight:600;">Sign In</a>
+      </p>
+      <p style="text-align:center; color:var(--muted); font-size:0.85rem; margin-top:0.5rem">
+        Property manager? <a href="login.html" style="color:var(--primary);">Admin Login</a>
+      </p>
     </div>
-    </div>
+  </div>
+
   <script src="js/api.js"></script>
+  <script src="js/google-auth.js"></script>
+  <script>initializeGoogleSignIn({ role: 'tenant', destination: 'pages/tenant-dashboard.html' });</script>
   <script>
+    // Toggle password visibility
+    document.getElementById('togglePwd').addEventListener('click', () => {
+      const pwdInput = document.getElementById('password');
+      const icon = document.getElementById('togglePwdIcon');
+      const isVisible = pwdInput.type === 'text';
+      pwdInput.type = isVisible ? 'password' : 'text';
+      icon.className = isVisible ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash';
+    });
+
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('registerError');
-      errorEl.textContent = '';
+      const successEl = document.getElementById('registerSuccess');
+      const submitBtn = document.getElementById('submitBtn');
+      errorEl.classList.add('hidden');
+      successEl.classList.add('hidden');
+
       const body = {
         fullName: document.getElementById('fullName').value.trim(),
         email: document.getElementById('email').value.trim(),
@@ -39,16 +97,37 @@
         address: document.getElementById('address').value.trim(),
         password: document.getElementById('password').value,
       };
-        try {
-         const res = await fetch(`${API_BASE_URL}/auth/tenant/register`, {
+
+      if (!body.fullName || !body.email || !body.phone || !body.password) {
+        errorEl.textContent = 'Please fill in all required fields.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+      if (body.password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating account…';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/auth/tenant/register`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed');
         localStorage.setItem('tenant_token', data.token);
         localStorage.setItem('tenant_info', JSON.stringify(data.tenant));
-        window.location.href = 'pages/tenant-dashboard.html';
-      } catch (err) { errorEl.textContent = err.message; }
+        successEl.classList.remove('hidden');
+        setTimeout(() => { window.location.href = 'pages/tenant-dashboard.html'; }, 1200);
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Create Account';
+      }
     });
   </script>
 </body>

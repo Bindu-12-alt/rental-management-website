@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Payments | RentEase</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/tenant-dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -17,37 +18,106 @@
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
-        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
         <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
         <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
       </nav>
     </aside>
     <main class="content-area">
-      <header class="topbar"><div><h2>My Payments</h2><p>View all your rent payment records.</p></div></header>
+      <header class="topbar">
+        <div><h2>My Payments</h2><p>Your rent payment history and upcoming dues.</p></div>
+      </header>
+
+      <!-- Summary Cards -->
+      <section class="dashboard-cards" id="paymentCards"></section>
+
+      <!-- Filters -->
+      <div style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+        <select id="statusFilter" style="border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:#FFFAF6">
+          <option value="">All Statuses</option>
+          <option value="Paid">Paid</option>
+          <option value="Pending">Pending</option>
+          <option value="Overdue">Overdue</option>
+        </select>
+      </div>
+
       <section class="table-panel card">
-        <table class="data-table">
-          <thead><tr><th>Apartment</th><th>Amount</th><th>Due Date</th><th>Payment Date</th><th>Method</th><th>Status</th></tr></thead>
-          <tbody id="paymentsBody"></tbody>
-        </table>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Apartment</th>
+                <th>Amount</th>
+                <th>Due Date</th>
+                <th>Payment Date</th>
+                <th>Method</th>
+                <th>Transaction ID</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsBody">
+              <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
+
   <script src="../js/tenant-api.js"></script>
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
-    tenantRequest('/tenant-portal/payments').then(res => {
-      document.getElementById('paymentsBody').innerHTML = res.data.map(p => `
+    document.getElementById('statusFilter').addEventListener('change', loadPayments);
+
+    let allPayments = [];
+
+    async function loadPayments() {
+      try {
+        const res = await tenantRequest('/tenant-portal/payments');
+        allPayments = res.data;
+        renderCards(allPayments);
+        renderTable(allPayments);
+      } catch (err) {
+        document.getElementById('paymentsBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:1rem">${err.message}</td></tr>`;
+      }
+    }
+
+    function renderCards(payments) {
+      const paid = payments.filter(p => p.status === 'Paid');
+      const pending = payments.filter(p => p.status === 'Pending');
+      const overdue = payments.filter(p => p.status === 'Overdue');
+      const totalPaid = paid.reduce((sum, p) => sum + p.amount, 0);
+      document.getElementById('paymentCards').innerHTML = `
+        <div class="stat-card"><div class="card-icon success"><i class="fa-solid fa-circle-check"></i></div><div><p>Total Paid</p><h3>₹${totalPaid.toLocaleString('en-IN')}</h3></div></div>
+        <div class="stat-card"><div class="card-icon warning"><i class="fa-solid fa-clock"></i></div><div><p>Pending</p><h3>${pending.length}</h3></div></div>
+        <div class="stat-card"><div class="card-icon danger"><i class="fa-solid fa-triangle-exclamation"></i></div><div><p>Overdue</p><h3>${overdue.length}</h3></div></div>
+        <div class="stat-card"><div class="card-icon blue"><i class="fa-solid fa-receipt"></i></div><div><p>Total Records</p><h3>${payments.length}</h3></div></div>
+      `;
+    }
+
+    function renderTable(payments) {
+      const filter = document.getElementById('statusFilter').value;
+      const data = filter ? payments.filter(p => p.status === filter) : payments;
+      const tbody = document.getElementById('paymentsBody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No payments found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(p => `
         <tr>
           <td>${p.apartment?.apartmentNumber || '—'}</td>
-          <td>₹${p.amount.toFixed(2)}</td>
+          <td><strong>₹${Number(p.amount).toLocaleString('en-IN')}</strong></td>
           <td>${p.dueDate.split('T')[0]}</td>
           <td>${p.paymentDate.split('T')[0]}</td>
           <td>${p.method}</td>
+          <td style="font-size:12px;color:var(--muted)">${p.transactionId || '—'}</td>
           <td><span class="status-badge ${p.status.toLowerCase()}">${p.status}</span></td>
-        </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">No payments found.</td></tr>';
-    }).catch(console.error);
+        </tr>`).join('');
+    }
+
+    loadPayments();
   </script>
 </body>
 </html>

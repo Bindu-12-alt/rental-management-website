@@ -20,6 +20,9 @@ async function getDashboardStats(req, res, next) {
     const pendingVacatingRequests = await VacatingRequest.countDocuments({ status: 'Pending' });
     const pendingDepositRefunds = await SecurityDeposit.countDocuments({ refundStatus: { $in: ['Pending', 'Partial'] } });
 
+    const paidRent = await Payment.countDocuments({ status: 'Paid' });
+    const pendingMaintenance = await (require('../models/MaintenanceRequest')).countDocuments({ status: 'Pending' });
+
     res.json({
       success: true,
       data: {
@@ -28,11 +31,13 @@ async function getDashboardStats(req, res, next) {
         emptyApartments,
         vacatingSoon,
         totalTenants,
+        paidRent,
         pendingRent,
         overdueRent,
         upcomingRenewals,
         pendingVacatingRequests,
         pendingDepositRefunds,
+        pendingMaintenance,
       },
     });
   } catch (error) {

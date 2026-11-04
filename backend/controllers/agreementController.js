@@ -3,6 +3,7 @@ const Tenant = require('../models/Tenant');
 const Apartment = require('../models/Apartment');
 const History = require('../models/History');
 const { createNotification } = require('../services/notificationService');
+const { sendEmail, templates } = require('../services/emailService');
 
 function daysBetween(a, b) {
   return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
@@ -110,6 +111,24 @@ async function createAgreement(req, res, next) {
       });
     }
 
+    // Send email notification (non-blocking)
+    try {
+      const tenantDoc = await Tenant.findById(tenant).select('fullName email');
+      if (tenantDoc && tenantDoc.email) {
+        const emailData = templates.agreementCreatedEmail({
+          fullName: tenantDoc.fullName,
+          agreementId,
+          startDate: new Date(startDate).toLocaleDateString(),
+          expiryDate: new Date(expiryDate).toLocaleDateString(),
+          monthlyRent,
+          apartmentNumber: apt.apartmentNumber,
+        });
+        await sendEmail({ to: tenantDoc.email, ...emailData });
+      }
+    } catch (emailErr) {
+      console.error('[Agreement] Email notification failed:', emailErr.message);
+    }
+
     res.status(201).json({ success: true, data: agreement });
   } catch (error) {
     next(error);
@@ -155,6 +174,7 @@ async function updateAgreement(req, res, next) {
   }
 }
 
+// FIX: Route registration is POST; updated route file to match. Frontend also updated.
 async function renewAgreement(req, res, next) {
   try {
     const agreement = await RentalAgreement.findById(req.params.id);
@@ -190,7 +210,7 @@ async function renewAgreement(req, res, next) {
       rentalCycle: newRentalCycle,
       monthlyRent: newMonthlyRent,
       agreementDetails: agreement.agreementDetails,
-      status: 'Renewed',
+      status: 'Active',
       renewals: [],
     });
 

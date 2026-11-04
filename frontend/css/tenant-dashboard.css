@@ -1,0 +1,81 @@
+/* Tenant Dashboard additional styles */
+.td-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+.td-apartment-card { grid-column: 1 / 2; }
+.td-full-width { grid-column: 1 / -1; }
+
+.apt-loading { color: var(--muted); padding: 12px 0; }
+.apt-info-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.apt-info-row i { color: var(--primary); margin-top: 3px; flex-shrink: 0; }
+.apt-info-row strong { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+.apt-info-row span { font-size: 15px; font-weight: 500; }
+
+.apt-not-assigned { text-align: center; padding: 20px; color: var(--muted); }
+.apt-not-assigned i { font-size: 36px; margin-bottom: 10px; display: block; color: var(--border); }
+
+.quick-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.qa-btn {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 16px 10px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  text-align: center; transition: transform 0.15s, opacity 0.15s; cursor: pointer;
+}
+.qa-btn:hover { transform: translateY(-2px); opacity: 0.9; }
+.qa-orange { background: #FFF3E0; color: #E65100; }
+.qa-green { background: #E8F5E9; color: #2E7D32; }
+.qa-blue { background: #E3F2FD; color: #1565C0; }
+.qa-red { background: #FCE4EC; color: #C62828; }
+.qa-btn i { font-size: 22px; }
+
+.contact-admin-box {
+  background: #F5FFF8; border: 1px solid #C8E6C9; border-radius: 12px; padding: 14px;
+  margin-top: 6px;
+}
+.contact-admin-box p { font-size: 13px; color: #2E7D32; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.contact-admin-box textarea { width: 100%; border: 1px solid #C8E6C9; border-radius: 8px; padding: 8px; background: #fff; font-size: 13px; resize: vertical; margin-bottom: 8px; }
+.form-msg { font-size: 13px; padding: 8px 12px; border-radius: 8px; margin-top: 6px; }
+.form-msg.success { background: #E8F5E9; color: #2E7D32; }
+.form-msg.error { background: #FCE4EC; color: #C62828; }
+
+.panel-link { font-size: 13px; color: var(--primary); font-weight: 600; }
+.muted-text { color: var(--muted); font-size: 14px; padding: 8px 0; }
+
+.notif-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.notif-item:last-child { border-bottom: none; }
+.notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 6px; }
+.notif-dot.read { background: var(--border); }
+.notif-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+.notif-time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.maint-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.maint-item:last-child { border-bottom: none; }
+.maint-cat-icon { width: 36px; height: 36px; border-radius: 10px; background: #FFF3E0; color: #E65100; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.maint-info { flex: 1; }
+.maint-title { font-size: 14px; font-weight: 600; }
+.maint-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.nav-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; background: var(--danger); color: #fff;
+  border-radius: 999px; font-size: 11px; padding: 0 5px; margin-left: 4px;
+}
+
+.history-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.history-item:last-child { border-bottom: none; }
+.history-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 5px; }
+.history-title { font-size: 14px; font-weight: 600; }
+.history-desc { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.history-date { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+@media (max-width: 768px) {
+  .td-grid { grid-template-columns: 1fr; }
+  .td-full-width { grid-column: 1; }
+}

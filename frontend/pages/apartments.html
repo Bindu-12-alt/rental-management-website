@@ -10,13 +10,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="sidebar-brand">
-        <span>🏠</span>
-        <div>
-          <h1>RentEase</h1>
-          <small>Rental Admin</small>
-        </div>
-      </div>
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Rental Admin</small></div></div>
       <nav class="sidebar-nav">
         <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
         <a class="active" href="apartments.html"><i class="fa-solid fa-building"></i> Apartments</a>
@@ -36,14 +30,14 @@
       <header class="topbar">
         <div>
           <h2>Apartments</h2>
-          <p>Manage apartment inventory, status, and assignments.</p>
+          <p>Manage apartment inventory, listings, and assignments.</p>
         </div>
         <div class="topbar-actions">
           <div class="topbar-search">
-            <input id="searchInput" type="search" placeholder="Search by number, building, floor" />
+            <input id="searchInput" type="search" placeholder="Search by unit, building, city…" />
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
-          <button class="button primary" id="createApartmentBtn">Add Apartment</button>
+          <button class="button primary" id="createApartmentBtn"><i class="fa-solid fa-plus"></i> Add Apartment</button>
         </div>
       </header>
 
@@ -57,48 +51,115 @@
         <select id="typeFilter">
           <option value="">All Types</option>
           <option value="Studio">Studio</option>
-          <option value="1BHK">1BHK</option>
-          <option value="2BHK">2BHK</option>
+          <option value="1BHK">1 BHK</option>
+          <option value="2BHK">2 BHK</option>
+          <option value="3BHK">3 BHK</option>
+          <option value="Villa">Villa</option>
+          <option value="PG">PG / Hostel</option>
         </select>
       </section>
 
       <section class="table-panel card">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Apartment</th>
-              <th>Building</th>
-              <th>Floor</th>
-              <th>Type</th>
-              <th>Rent</th>
-              <th>Deposit</th>
-              <th>Status</th>
-              <th>Tenant</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="apartmentsTableBody"></tbody>
-        </table>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Unit</th>
+                <th>Building</th>
+                <th>Type</th>
+                <th>Location</th>
+                <th>Rent</th>
+                <th>Beds</th>
+                <th>Status</th>
+                <th>Tenant</th>
+                <th>Listed</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="apartmentsTableBody">
+              <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      <section id="apartmentFormSection" class="card hidden">
-        <div class="panel-header"><h3 id="apartmentFormTitle">Add Apartment</h3></div>
+      <!-- Add / Edit Form -->
+      <section id="apartmentFormSection" class="card hidden" style="margin-top:1.5rem">
+        <div class="panel-header">
+          <h3 id="apartmentFormTitle">Add Apartment</h3>
+          <button class="button small outline" id="cancelAptBtn">Cancel</button>
+        </div>
         <form id="apartmentForm" class="module-form">
+
+          <h4 style="margin:0 0 0.75rem;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Basic Details</h4>
           <div class="form-grid">
-            <div class="form-group"><label>Apartment Number</label><input id="aptNumber" required /></div>
-            <div class="form-group"><label>Building Details</label><input id="aptBuilding" required /></div>
-            <div class="form-group"><label>Floor Details</label><input id="aptFloor" required /></div>
-            <div class="form-group"><label>Type</label><select id="aptType" required><option value="">Select</option><option value="Studio">Studio</option><option value="1BHK">1BHK</option><option value="2BHK">2BHK</option></select></div>
-            <div class="form-group"><label>Monthly Rent</label><input id="aptRent" type="number" min="0" required /></div>
-            <div class="form-group"><label>Security Deposit</label><input id="aptDeposit" type="number" min="0" required /></div>
-            <div class="form-group"><label>Status</label><select id="aptStatus"><option value="Empty">Empty</option><option value="Occupied">Occupied</option><option value="Vacating Soon">Vacating Soon</option></select></div>
-            <div class="form-group full-width"><label>Policies / Notes</label><textarea id="aptPolicies"></textarea></div>
+            <div class="form-group"><label>Apartment Number *</label><input id="aptNumber" placeholder="e.g. A-101" required /></div>
+            <div class="form-group"><label>Building Name *</label><input id="aptBuilding" placeholder="e.g. Blue Tower" required /></div>
+            <div class="form-group"><label>Floor Details *</label><input id="aptFloor" placeholder="e.g. 3rd Floor" required /></div>
+            <div class="form-group">
+              <label>Type *</label>
+              <select id="aptType" required>
+                <option value="">Select Type</option>
+                <option value="Studio">Studio</option>
+                <option value="1BHK">1 BHK</option>
+                <option value="2BHK">2 BHK</option>
+                <option value="3BHK">3 BHK</option>
+                <option value="Villa">Villa</option>
+                <option value="PG">PG / Hostel</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Monthly Rent (₹) *</label><input id="aptRent" type="number" min="0" placeholder="e.g. 15000" required /></div>
+            <div class="form-group"><label>Security Deposit (₹) *</label><input id="aptDeposit" type="number" min="0" placeholder="e.g. 30000" required /></div>
+            <div class="form-group"><label>Bedrooms</label><input id="aptBedrooms" type="number" min="0" placeholder="e.g. 2" /></div>
+            <div class="form-group"><label>Bathrooms</label><input id="aptBathrooms" type="number" min="0" placeholder="e.g. 2" /></div>
+            <div class="form-group"><label>Area (sq ft)</label><input id="aptArea" type="number" min="0" placeholder="e.g. 850" /></div>
+            <div class="form-group">
+              <label>Status</label>
+              <select id="aptStatus">
+                <option value="Empty">Empty</option>
+                <option value="Occupied">Occupied</option>
+                <option value="Vacating Soon">Vacating Soon</option>
+              </select>
+            </div>
           </div>
+
+          <h4 style="margin:1rem 0 0.75rem;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Location</h4>
+          <p class="form-help">Add the real address and city to publish this property. Tenants can search by city or locality and preview the map. Coordinates are optional but provide a more accurate pin.</p>
+          <div class="form-grid">
+            <div class="form-group full-width"><label for="aptAddress">Full Address</label><input id="aptAddress" placeholder="e.g. 42, Park Street, Bandra West" autocomplete="street-address" /></div>
+            <div class="form-group"><label for="aptCity">City</label><input id="aptCity" placeholder="e.g. Mumbai" autocomplete="address-level2" /></div>
+            <div class="form-group"><label>Locality / Area</label><input id="aptLocality" placeholder="e.g. Bandra West" /></div>
+            <div class="form-group"><label>State</label><input id="aptState" placeholder="e.g. Maharashtra" /></div>
+            <div class="form-group"><label>Pincode</label><input id="aptPincode" placeholder="e.g. 400050" /></div>
+            <div class="form-group"><label for="aptLat">Latitude</label><input id="aptLat" type="number" min="-90" max="90" step="any" placeholder="e.g. 19.0760" /></div>
+            <div class="form-group"><label for="aptLng">Longitude</label><input id="aptLng" type="number" min="-180" max="180" step="any" placeholder="e.g. 72.8777" /></div>
+            <div class="form-group full-width"><a id="aptMapPreview" class="button outline small" href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">Preview location in Google Maps</a></div>
+          </div>
+
+          <h4 style="margin:1rem 0 0.75rem;color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Listing & Description</h4>
+          <div class="form-grid">
+            <div class="form-group full-width"><label>Public Description</label><textarea id="aptDescription" placeholder="Describe the apartment for prospective tenants…"></textarea></div>
+            <div class="form-group full-width"><label>Amenities (comma-separated)</label><input id="aptAmenities" placeholder="e.g. Parking, WiFi, Gym, CCTV, Power Backup" /></div>
+            <div class="form-group full-width"><label>Rental Policies / Notes</label><textarea id="aptPolicies" placeholder="e.g. No pets, lease minimum 11 months…"></textarea></div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="aptFeatured" style="width:auto;margin-right:6px" />
+                Feature on Homepage
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="aptListed" checked style="width:auto;margin-right:6px" />
+                Show in Public Listings
+              </label>
+            </div>
+          </div>
+
+          <p id="apartmentFormError" class="form-error hidden"></p>
           <div class="form-actions">
-            <button type="submit" class="button primary">Save Apartment</button>
-            <button type="button" id="cancelAptBtn" class="button outline">Cancel</button>
+            <button type="submit" class="button primary"><i class="fa-solid fa-floppy-disk"></i> Save Apartment</button>
+            <button type="button" id="cancelAptBtn2" class="button outline">Cancel</button>
           </div>
-          <p id="apartmentFormError" class="form-error"></p>
         </form>
       </section>
     </main>

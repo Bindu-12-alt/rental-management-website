@@ -3,40 +3,515 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RentEase – Rental Management System</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <title>RentEase – Find a Place You'll Love to Call Home</title>
+  <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" />
 </head>
 <body>
-  <div class="landing-container">
-    <header class="landing-header">
-      <div class="brand">
-        <span class="brand-icon">🏠</span>
-        <div>
-          <h1>RentEase</h1>
-          <p>Rental Management System</p>
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════════ -->
+<header class="site-header" id="siteHeader">
+  <div class="header-inner">
+    <a href="/" class="logo-link">
+      <span class="logo-icon">🏠</span>
+      <div class="logo-text">
+        <span class="logo-name">RentEase</span>
+        <span class="logo-tag">Premium Rentals</span>
+      </div>
+    </a>
+
+    <nav class="main-nav" id="mainNav">
+      <a href="#search-section" class="nav-link">Find Apartments</a>
+      <a href="#how-it-works" class="nav-link">How It Works</a>
+      <a href="#services" class="nav-link">Resident Services</a>
+      <a href="#contact" class="nav-link">Contact Us</a>
+    </nav>
+
+    <div class="header-actions">
+      <a href="tenant-login.html" class="btn-ghost">Tenant Login</a>
+      <a href="login.html" class="btn-primary">Admin Portal</a>
+      <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile nav drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="#search-section" class="mobile-nav-link">Find Apartments</a>
+    <a href="#how-it-works" class="mobile-nav-link">How It Works</a>
+    <a href="#services" class="mobile-nav-link">Resident Services</a>
+    <a href="#contact" class="mobile-nav-link">Contact Us</a>
+    <div class="mobile-nav-divider"></div>
+    <a href="tenant-register.html" class="mobile-nav-link">Tenant Register</a>
+    <a href="tenant-login.html" class="mobile-nav-link">Tenant Login</a>
+    <a href="login.html" class="mobile-nav-link">Admin Login</a>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ HERO ═════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-overlay"></div>
+    <div class="hero-slides" id="heroSlides">
+      <div class="hero-slide active" style="background-image:url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80')"></div>
+      <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1400&q=80')"></div>
+      <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1400&q=80')"></div>
+    </div>
+  </div>
+  <div class="hero-content">
+    <p class="hero-eyebrow"><i class="fa-solid fa-location-dot"></i> Premium Rentals Across the City</p>
+    <h1 class="hero-heading">Find a Place You'll<br>Love to Call Home.</h1>
+    <p class="hero-sub">Browse verified apartments with transparent pricing, modern amenities, and a seamless rental experience.</p>
+
+    <!-- Search Bar -->
+    <div class="search-card" id="searchCard">
+      <div class="search-tabs">
+        <button class="search-tab active" data-tab="search">Search</button>
+        <button class="search-tab" data-tab="filter">Filters</button>
+      </div>
+
+      <div class="search-panel active" id="tabSearch">
+        <div class="search-row">
+          <div class="search-field search-field-main">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="heroSearch" placeholder="City, locality, or apartment name…" autocomplete="off" />
+          </div>
+          <button class="search-btn" id="heroSearchBtn">
+            <i class="fa-solid fa-search"></i> Search
+          </button>
+        </div>
+        <div class="search-quick-filters">
+          <span class="quick-filter-label">Popular:</span>
+          <button class="qf-chip" data-city="Mumbai">Mumbai</button>
+          <button class="qf-chip" data-city="Pune">Pune</button>
+          <button class="qf-chip" data-city="Bangalore">Bangalore</button>
+          <button class="qf-chip" data-city="Hyderabad">Hyderabad</button>
         </div>
       </div>
-      <a class="button primary" href="login.html">Owner Login</a>
-    </header>
 
-    <main class="landing-main">
-      <section class="hero-card">
-        <h2>Modern property management, simplified.</h2>
-        <p>Manage apartments, tenants, payments, deposits, agreements, vacating requests, notifications, and maintenance with a clean web dashboard.</p>
-      <div class="hero-actions">
-          <a class="button primary" href="login.html"><i class="fa-solid fa-user-shield"></i> Owner Login</a>
-          <a class="button outline" href="tenant-login.html"><i class="fa-solid fa-user"></i> Tenant Login</a>
-          <a class="button outline" href="tenant-register.html"><i class="fa-solid fa-user-plus"></i> Tenant Register</a>
+      <div class="search-panel" id="tabFilter">
+        <div class="filter-grid">
+          <div class="filter-field">
+            <label>Min Rent (₹)</label>
+            <input type="number" id="filterMinRent" placeholder="e.g. 5000" min="0" />
+          </div>
+          <div class="filter-field">
+            <label>Max Rent (₹)</label>
+            <input type="number" id="filterMaxRent" placeholder="e.g. 50000" min="0" />
+          </div>
+          <div class="filter-field">
+            <label>Bedrooms</label>
+            <select id="filterBedrooms">
+              <option value="">Any</option>
+              <option value="1">1 BHK</option>
+              <option value="2">2 BHK</option>
+              <option value="3">3 BHK</option>
+              <option value="4">4+ BHK</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>Property Type</label>
+            <select id="filterType">
+              <option value="">Any Type</option>
+              <option value="1BHK">1 BHK</option>
+              <option value="2BHK">2 BHK</option>
+              <option value="3BHK">3 BHK</option>
+              <option value="Studio">Studio</option>
+              <option value="Villa">Villa</option>
+              <option value="PG">PG / Hostel</option>
+            </select>
+          </div>
         </div>
-      </section>
-      <section class="features-grid">
-        <article><i class="fa-solid fa-building"></i><h3>Apartments</h3><p>Track unit status, occupancy, rent, and history.</p></article>
-        <article><i class="fa-solid fa-user"></i><h3>Tenants</h3><p>Manage tenant records, agreements, and rental history.</p></article>
-        <article><i class="fa-solid fa-money-bill"></i><h3>Payments</h3><p>Record rent, pending payments, and overdue tracking.</p></article>
-        <article><i class="fa-solid fa-file-contract"></i><h3>Agreements</h3><p>Handle rental contracts, renewals, and expiry alerts.</p></article>
-      </section>
-    </main>
+        <div class="filter-actions">
+          <button class="search-btn" id="applyFiltersBtn"><i class="fa-solid fa-filter"></i> Apply Filters</button>
+          <button class="clear-btn" id="clearFiltersBtn"><i class="fa-solid fa-xmark"></i> Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><span id="statTotal">—</span><small>Properties</small></div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat"><span id="statAvailable">—</span><small>Available</small></div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat"><span>100%</span><small>Verified</small></div>
+    </div>
   </div>
+  <div class="hero-scroll-hint"><i class="fa-solid fa-chevron-down"></i></div>
+</section>
+
+<!-- ══════════════════════ SEARCH RESULTS ════════════════════════════════════ -->
+<section class="section section-light" id="search-section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title" id="searchResultsTitle">Featured Properties</h2>
+        <p class="section-sub" id="searchResultsSub">Handpicked apartments available right now</p>
+      </div>
+      <div class="sort-row">
+        <label for="sortSelect">Sort:</label>
+        <select id="sortSelect">
+          <option value="newest">Newest</option>
+          <option value="rent-asc">Rent: Low → High</option>
+          <option value="rent-desc">Rent: High → Low</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="listings-grid" id="listingsGrid">
+      <!-- populated by JS -->
+      <div class="listings-skeleton">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+    </div>
+
+    <div class="empty-state hidden" id="listingsEmpty">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <h3>No properties found</h3>
+      <p>Try adjusting your search or filters</p>
+      <button class="btn-primary" onclick="loadListings()">Show All</button>
+    </div>
+
+    <div class="listings-footer hidden" id="listingsFooter">
+      <button class="btn-outline" id="loadMoreBtn">Load More Properties</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ HOW IT WORKS ══════════════════════════════════════ -->
+<section class="section section-dark" id="how-it-works">
+  <div class="container">
+    <div class="section-header center">
+      <h2 class="section-title light">How RentEase Works</h2>
+      <p class="section-sub light">A simple, transparent rental process — for tenants and property managers alike.</p>
+    </div>
+
+    <div class="tabs-toggle">
+      <button class="toggle-btn active" data-target="forTenants">For Tenants</button>
+      <button class="toggle-btn" data-target="forOwners">For Owners</button>
+    </div>
+
+    <div class="how-steps" id="forTenants">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <h3>Search & Discover</h3>
+        <p>Browse verified listings by location, rent range, and apartment type. Filter to find exactly what you need.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon"><i class="fa-solid fa-envelope"></i></div>
+        <h3>Apply & Connect</h3>
+        <p>Send an enquiry or contact the property manager directly. Register your interest in minutes.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon"><i class="fa-solid fa-file-contract"></i></div>
+        <h3>Sign Your Agreement</h3>
+        <p>Review and accept your rental agreement. All your documents are stored securely in your portal.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon"><i class="fa-solid fa-house-chimney-user"></i></div>
+        <h3>Move In & Manage</h3>
+        <p>Pay rent, raise maintenance requests, and track everything from your personal tenant dashboard.</p>
+      </div>
+    </div>
+
+    <div class="how-steps hidden" id="forOwners">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon"><i class="fa-solid fa-building-circle-check"></i></div>
+        <h3>List Your Property</h3>
+        <p>Add your apartments with photos, rent, amenities, and location. Mark them available for discovery.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon"><i class="fa-solid fa-users"></i></div>
+        <h3>Manage Tenants</h3>
+        <p>Track tenants, assign apartments, and handle onboarding — all from the admin dashboard.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+        <h3>Collect Payments</h3>
+        <p>Record and track rent payments, deposits, and overdue accounts with automatic reminders.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon"><i class="fa-solid fa-bell"></i></div>
+        <h3>Stay Notified</h3>
+        <p>Get instant alerts for maintenance requests, vacating notices, and agreement renewals.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ RESIDENT SERVICES ══════════════════════════════════ -->
+<section class="section section-light" id="services">
+  <div class="container">
+    <div class="section-header center">
+      <h2 class="section-title">Everything You Need, In One Place</h2>
+      <p class="section-sub">Residents get access to a full suite of management tools — no phone calls required.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card">
+        <div class="service-icon" style="background:#FFF3E0;color:#E65100"><i class="fa-solid fa-wrench"></i></div>
+        <h3>Maintenance Requests</h3>
+        <p>Submit repair requests with photos, track status, and get notified when work is completed.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" style="background:#E8F5E9;color:#2E7D32"><i class="fa-solid fa-money-bill-wave"></i></div>
+        <h3>Rent Payments</h3>
+        <p>View your payment history, upcoming dues, and get reminders — all in your tenant portal.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" style="background:#E3F2FD;color:#1565C0"><i class="fa-solid fa-file-contract"></i></div>
+        <h3>Rental Agreements</h3>
+        <p>Access your rental agreement anytime. Get notified before it expires to plan renewals.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" style="background:#FCE4EC;color:#C62828"><i class="fa-solid fa-door-open"></i></div>
+        <h3>Vacating Requests</h3>
+        <p>Submit and track vacating requests with the required notice period — no paperwork needed.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" style="background:#F3E5F5;color:#6A1B9A"><i class="fa-brands fa-whatsapp"></i></div>
+        <h3>WhatsApp Alerts</h3>
+        <p>Get rent reminders, maintenance updates, and agreement notices straight to WhatsApp.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+      <div class="service-card">
+        <div class="service-icon" style="background:#E0F2F1;color:#00695C"><i class="fa-solid fa-shield-halved"></i></div>
+        <h3>Security Deposits</h3>
+        <p>Track your deposit amount, status, and refund details transparently from day one.</p>
+        <a href="tenant-register.html" class="service-link">Get started <i class="fa-solid fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ WHY RENTEASE ══════════════════════════════════════ -->
+<section class="section section-gradient">
+  <div class="container">
+    <div class="why-grid">
+      <div class="why-text">
+        <p class="eyebrow-pill">Why RentEase</p>
+        <h2>A Better Way to Rent</h2>
+        <p class="why-desc">Traditional renting is stressful — hidden fees, slow maintenance, lost documents. RentEase puts everything in one place, from your first lease to move-out day.</p>
+        <ul class="why-list">
+          <li><i class="fa-solid fa-circle-check"></i> Verified listings with accurate rent pricing</li>
+          <li><i class="fa-solid fa-circle-check"></i> Digital agreements — no paper, no lost documents</li>
+          <li><i class="fa-solid fa-circle-check"></i> Real-time maintenance tracking with photo uploads</li>
+          <li><i class="fa-solid fa-circle-check"></i> Email and WhatsApp notifications for every update</li>
+          <li><i class="fa-solid fa-circle-check"></i> Transparent deposit and payment history</li>
+          <li><i class="fa-solid fa-circle-check"></i> Dedicated tenant portal — 24/7 access</li>
+        </ul>
+        <div class="why-actions">
+          <a href="tenant-register.html" class="btn-primary">Create Tenant Account</a>
+          <a href="#search-section" class="btn-outline-dark">Browse Properties</a>
+        </div>
+      </div>
+      <div class="why-image">
+        <div class="why-image-card">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80" alt="Modern apartment interior" />
+          <div class="why-image-badge">
+            <i class="fa-solid fa-star"></i>
+            <span>Verified & Trusted</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ TESTIMONIALS ══════════════════════════════════════ -->
+<section class="section section-light" id="testimonials">
+  <div class="container">
+    <div class="section-header center">
+      <p class="eyebrow-pill">What Residents Say</p>
+      <h2 class="section-title">Tenant Stories</h2>
+      <p class="section-sub muted-note">Demo content — represents the kind of feedback RentEase is built to earn.</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p>"Moving in was effortless. Everything from the agreement to my first payment was handled digitally. The maintenance team responded within 24 hours."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">P</div>
+          <div>
+            <strong>Priya M.</strong>
+            <small>2BHK, Blue Tower — 8 months</small>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card featured">
+        <div class="stars">★★★★★</div>
+        <p>"I love that I get WhatsApp reminders before rent is due. Never missed a payment. The deposit tracking is also very transparent — I could see the exact breakdown."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">R</div>
+          <div>
+            <strong>Rahul K.</strong>
+            <small>3BHK, Skyline View — 14 months</small>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★☆</div>
+        <p>"Raised a plumbing issue at 10pm, uploaded a photo, and it was resolved by next morning. The status updates are a great touch — no need to follow up repeatedly."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">A</div>
+          <div>
+            <strong>Ananya S.</strong>
+            <small>1BHK Studio — 6 months</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ CONTACT ════════════════════════════════════════════ -->
+<section class="section section-dark" id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <p class="eyebrow-pill light">Get In Touch</p>
+        <h2 class="light">Have Questions?<br>We're Here to Help.</h2>
+        <p class="light muted-light">Reach out about a property, your tenancy, or anything else. Our team responds within one business day.</p>
+        <div class="contact-items">
+          <div class="contact-item">
+            <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
+            <div>
+              <strong>Email Us</strong>
+              <p>support@rentease.com</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon"><i class="fa-brands fa-whatsapp"></i></div>
+            <div>
+              <strong>WhatsApp</strong>
+              <p>+91 98765 43210</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon"><i class="fa-solid fa-clock"></i></div>
+            <div>
+              <strong>Office Hours</strong>
+              <p>Mon–Sat, 9am – 6pm</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form-card">
+        <h3>Send an Enquiry</h3>
+        <form id="contactForm" novalidate>
+          <div class="form-group">
+            <label for="cName">Your Name *</label>
+            <input type="text" id="cName" placeholder="Full name" required />
+          </div>
+          <div class="form-group">
+            <label for="cEmail">Email Address *</label>
+            <input type="email" id="cEmail" placeholder="you@email.com" required />
+          </div>
+          <div class="form-group">
+            <label for="cPhone">Phone Number</label>
+            <input type="tel" id="cPhone" placeholder="+91 98765 43210" />
+          </div>
+          <div class="form-group">
+            <label for="cMessage">Message *</label>
+            <textarea id="cMessage" rows="4" placeholder="Tell us about your requirements…" required></textarea>
+          </div>
+          <div class="form-error hidden" id="contactError"></div>
+          <div class="form-success hidden" id="contactSuccess">
+            <i class="fa-solid fa-circle-check"></i> Message received! We'll be in touch shortly.
+          </div>
+          <button type="submit" class="btn-primary full-width" id="contactSubmitBtn">
+            <i class="fa-solid fa-paper-plane"></i> Send Message
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ═════════════════════════════════════════════ -->
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <span>🏠</span>
+          <span class="footer-logo-name">RentEase</span>
+        </div>
+        <p>A modern rental management platform connecting tenants and property managers with transparency and ease.</p>
+        <div class="footer-socials">
+          <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+      </div>
+
+      <div class="footer-col">
+        <h4>Properties</h4>
+        <ul>
+          <li><a href="#search-section">Search Apartments</a></li>
+          <li><a href="#services">Resident Services</a></li>
+          <li><a href="#how-it-works">How It Works</a></li>
+          <li><a href="tenant-register.html">Register as Tenant</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Portals</h4>
+        <ul>
+          <li><a href="tenant-login.html">Tenant Login</a></li>
+          <li><a href="tenant-register.html">Tenant Register</a></li>
+          <li><a href="login.html">Admin Login</a></li>
+          <li><a href="register.html">Admin Register</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#" onclick="return false">Privacy Policy</a></li>
+          <li><a href="#" onclick="return false">Terms of Service</a></li>
+          <li><a href="#" onclick="return false">Cookie Policy</a></li>
+          <li><a href="#contact">Contact Us</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© <span id="footerYear"></span> RentEase. All rights reserved.</p>
+      <p>Built with care for tenants and property managers.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp FAB -->
+<a href="https://wa.me/919876543210" class="whatsapp-fab" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
+  <i class="fa-brands fa-whatsapp"></i>
+</a>
+
+<!-- Apartment Detail Modal -->
+<div class="modal-overlay hidden" id="apartmentModal">
+  <div class="modal-box" id="apartmentModalBox">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+    <div id="apartmentModalContent"><!-- filled by JS --></div>
+  </div>
+</div>
+
+<script src="js/home.js"></script>
 </body>
 </html>

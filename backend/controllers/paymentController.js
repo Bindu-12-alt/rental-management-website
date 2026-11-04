@@ -3,6 +3,8 @@ const Tenant = require('../models/Tenant');
 const Apartment = require('../models/Apartment');
 const History = require('../models/History');
 const { createNotification } = require('../services/notificationService');
+const { sendEmail, templates } = require('../services/emailService');
+const { sendWhatsApp, templates: waTemplates } = require('../services/whatsappService');
 
 async function getPayments(req, res, next) {
   try {
@@ -36,7 +38,7 @@ async function getPayments(req, res, next) {
 
 async function createPayment(req, res, next) {
   try {
-    const { tenant, apartment, amount, paymentDate, dueDate, method, transactionId, status } = req.body;
+    const { tenant, apartment, amount, paymentDate, dueDate, method, transactionId, status, notes } = req.body;
     if (!tenant || !apartment || amount == null || !paymentDate || !dueDate || !method) {
       const err = new Error('Tenant, apartment, amount, payment date, due date, and method are required');
       err.statusCode = 400;
@@ -50,22 +52,18 @@ async function createPayment(req, res, next) {
 
     const paymentStatus = status || (new Date(paymentDate) > new Date(dueDate) ? 'Overdue' : 'Paid');
     const payment = await Payment.create({
-      tenant,
-      apartment,
-      amount,
+      tenant, apartment, amount,
       paymentDate: new Date(paymentDate),
       dueDate: new Date(dueDate),
-      method,
-      transactionId,
+      method, transactionId, notes,
       status: paymentStatus,
     });
 
     await History.create({
       type: 'Rent Payment',
-      title: `Payment ${payment._id} recorded`,
-      description: `Recorded rent payment of ${amount}`,
-      tenant,
-      apartment,
+      title: `Payment recorded`,
+      description: `Recorded rent payment of ₹${amount}`,
+      tenant, apartment,
       relatedPayment: payment._id,
     });
 
@@ -73,10 +71,38 @@ async function createPayment(req, res, next) {
       await createNotification({
         type: paymentStatus === 'Overdue' ? 'Overdue Payment' : 'Pending Payment',
         message: `Rent payment ${paymentStatus.toLowerCase()} for apartment ${apartment}`,
-        relatedTenant: tenant,
-        relatedApartment: apartment,
+        relatedTenant: tenant, relatedApartment: apartment,
         priority: paymentStatus === 'Overdue' ? 'High' : 'Medium',
       });
+    }
+
+    // Send payment confirmation email + WhatsApp when payment is confirmed Paid
+    if (paymentStatus === 'Paid') {
+      try {
+        const tenantDoc = await Tenant.findById(tenant).select('fullName email phone');
+        const aptDoc = await Apartment.findById(apartment).select('apartmentNumber');
+        if (tenantDoc) {
+          const emailData = templates.paymentConfirmationEmail({
+            fullName: tenantDoc.fullName,
+            amount,
+            paymentDate: new Date(paymentDate).toLocaleDateString(),
+            transactionId,
+            apartmentNumber: aptDoc?.apartmentNumber || '—',
+          });
+          await sendEmail({ to: tenantDoc.email, ...emailData });
+
+          if (tenantDoc.phone) {
+            await sendWhatsApp(tenantDoc.phone, waTemplates.paymentConfirmed({
+              fullName: tenantDoc.fullName,
+              amount,
+              paymentDate: new Date(paymentDate).toLocaleDateString(),
+              apartmentNumber: aptDoc?.apartmentNumber || '—',
+            }));
+          }
+        }
+      } catch (notifErr) {
+        console.error('[Payment] Confirmation notification failed:', notifErr.message);
+      }
     }
 
     res.status(201).json({ success: true, data: payment });
@@ -110,12 +136,14 @@ async function updatePayment(req, res, next) {
       return next(err);
     }
 
-    const { amount, paymentDate, dueDate, method, transactionId, status } = req.body;
+    const { amount, paymentDate, dueDate, method, transactionId, status, notes } = req.body;
     if (amount != null && amount < 0) {
       const err = new Error('Payment amount must be positive');
       err.statusCode = 400;
       return next(err);
     }
+
+    const oldStatus = payment.status;
 
     Object.assign(payment, {
       amount: amount ?? payment.amount,
@@ -123,23 +151,55 @@ async function updatePayment(req, res, next) {
       dueDate: dueDate ? new Date(dueDate) : payment.dueDate,
       method: method ?? payment.method,
       transactionId: transactionId ?? payment.transactionId,
+      notes: notes ?? payment.notes,
       status: status ?? payment.status,
     });
 
+    // Only auto-derive status if not explicitly provided
     if (!status) {
       if (payment.paymentDate > payment.dueDate) payment.status = 'Overdue';
-      else if (payment.paymentDate <= payment.dueDate) payment.status = 'Paid';
+      else payment.status = 'Paid';
     }
 
     await payment.save();
+
     await History.create({
       type: 'Payment Updated',
-      title: `Payment ${payment._id} updated`,
-      description: 'Updated payment record',
+      title: `Payment updated`,
+      description: `Payment record updated — Status: ${payment.status}`,
       tenant: payment.tenant,
       apartment: payment.apartment,
       relatedPayment: payment._id,
     });
+
+    // Send confirmation if status changed to Paid
+    if (payment.status === 'Paid' && oldStatus !== 'Paid') {
+      try {
+        const tenantDoc = await Tenant.findById(payment.tenant).select('fullName email phone');
+        const aptDoc = await Apartment.findById(payment.apartment).select('apartmentNumber');
+        if (tenantDoc) {
+          const emailData = templates.paymentConfirmationEmail({
+            fullName: tenantDoc.fullName,
+            amount: payment.amount,
+            paymentDate: payment.paymentDate.toLocaleDateString(),
+            transactionId: payment.transactionId,
+            apartmentNumber: aptDoc?.apartmentNumber || '—',
+          });
+          await sendEmail({ to: tenantDoc.email, ...emailData });
+          if (tenantDoc.phone) {
+            await sendWhatsApp(tenantDoc.phone, waTemplates.paymentConfirmed({
+              fullName: tenantDoc.fullName,
+              amount: payment.amount,
+              paymentDate: payment.paymentDate.toLocaleDateString(),
+              apartmentNumber: aptDoc?.apartmentNumber || '—',
+            }));
+          }
+        }
+      } catch (notifErr) {
+        console.error('[Payment] Update notification failed:', notifErr.message);
+      }
+    }
+
     res.json({ success: true, data: payment });
   } catch (error) {
     next(error);

@@ -4,6 +4,8 @@ const Apartment = require('../models/Apartment');
 const History = require('../models/History');
 const SecurityDeposit = require('../models/SecurityDeposit');
 const { createNotification } = require('../services/notificationService');
+const { sendEmail, templates } = require('../services/emailService');
+const { sendWhatsApp, templates: waTemplates } = require('../services/whatsappService');
 
 function dateDiffDays(start, end) {
   const diff = end.getTime() - start.getTime();
@@ -160,6 +162,29 @@ async function approveVacatingRequest(req, res, next) {
       relatedApartment: request.apartment,
       priority: 'High',
     });
+
+    // Email + WhatsApp
+    try {
+      const tenantDoc = await Tenant.findById(request.tenant).select('fullName email phone');
+      if (tenantDoc) {
+        const emailData = templates.vacatingRequestEmail({
+          fullName: tenantDoc.fullName,
+          expectedVacatingDate: request.expectedVacatingDate.toLocaleDateString(),
+          status: 'Approved',
+          adminComments: request.adminComments,
+        });
+        await sendEmail({ to: tenantDoc.email, ...emailData });
+        if (tenantDoc.phone) {
+          await sendWhatsApp(tenantDoc.phone, waTemplates.vacatingUpdate({
+            fullName: tenantDoc.fullName,
+            status: 'Approved',
+            expectedVacatingDate: request.expectedVacatingDate.toLocaleDateString(),
+          }));
+        }
+      }
+    } catch (notifErr) {
+      console.error('[Vacating] Approval notification failed:', notifErr.message);
+    }
 
     res.json({ success: true, data: request });
   } catch (error) {

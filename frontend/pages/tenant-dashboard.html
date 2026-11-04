@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tenant Dashboard | RentEase</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/tenant-dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -20,17 +21,19 @@
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
-        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
-        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications <span id="navNotifBadge" class="nav-badge hidden"></span></a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
         <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
       </nav>
     </aside>
+
     <main class="content-area">
+      <!-- Topbar -->
       <header class="topbar">
         <div>
-          <h2>Welcome, <span id="tenantName">Tenant</span></h2>
-          <p>View your rental details and manage your requests.</p>
+          <h2>Welcome back, <span id="tenantName">Tenant</span> 👋</h2>
+          <p>Here's a summary of your rental status and recent activity.</p>
         </div>
         <div class="topbar-actions">
           <button id="notificationBell" class="icon-button" onclick="window.location.href='tenant-notifications.html'">
@@ -41,25 +44,85 @@
         </div>
       </header>
 
+      <!-- Stat Cards -->
       <section class="dashboard-cards" id="tenantCards"></section>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem;">
-        <section class="panel">
-          <div class="panel-header"><h3>My Apartment</h3></div>
-          <div id="apartmentInfo"><p style="color:var(--muted)">No apartment assigned yet.</p></div>
+      <!-- Main grid -->
+      <div class="td-grid">
+
+        <!-- Apartment Card -->
+        <section class="panel card td-apartment-card">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-building"></i> My Apartment</h3>
+            <span id="aptStatusBadge"></span>
+          </div>
+          <div id="apartmentInfo">
+            <div class="apt-loading">Loading…</div>
+          </div>
         </section>
-        <section class="panel">
-          <div class="panel-header"><h3>Recent Notifications</h3></div>
-          <div id="recentNotifications"><p style="color:var(--muted)">No notifications.</p></div>
+
+        <!-- Quick Actions -->
+        <section class="panel card">
+          <div class="panel-header"><h3><i class="fa-solid fa-bolt"></i> Quick Actions</h3></div>
+          <div class="quick-actions-grid">
+            <a href="tenant-maintenance.html" class="qa-btn qa-orange">
+              <i class="fa-solid fa-wrench"></i>
+              <span>New Request</span>
+            </a>
+            <a href="tenant-payments.html" class="qa-btn qa-green">
+              <i class="fa-solid fa-money-bill-wave"></i>
+              <span>Pay Rent</span>
+            </a>
+            <a href="tenant-agreements.html" class="qa-btn qa-blue">
+              <i class="fa-solid fa-file-contract"></i>
+              <span>Agreement</span>
+            </a>
+            <a href="tenant-vacating.html" class="qa-btn qa-red">
+              <i class="fa-solid fa-door-open"></i>
+              <span>Vacating</span>
+            </a>
+          </div>
+          <!-- Contact admin via WhatsApp -->
+          <div class="contact-admin-box" id="contactAdminBox">
+            <p><i class="fa-brands fa-whatsapp"></i> Need help? Send a message to your property manager.</p>
+            <form id="contactAdminForm">
+              <textarea id="adminMsgInput" rows="2" placeholder="Type your message…" maxlength="500"></textarea>
+              <button type="submit" class="button small primary">Send via WhatsApp</button>
+            </form>
+            <div class="form-msg hidden" id="contactAdminMsg"></div>
+          </div>
+        </section>
+
+        <!-- Recent Notifications -->
+        <section class="panel card">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-bell"></i> Notifications</h3>
+            <a href="tenant-notifications.html" class="panel-link">View all</a>
+          </div>
+          <div id="recentNotifications"><p class="muted-text">No notifications.</p></div>
+        </section>
+
+        <!-- Active Maintenance -->
+        <section class="panel card">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-screwdriver-wrench"></i> Active Maintenance</h3>
+            <a href="tenant-maintenance.html" class="panel-link">View all</a>
+          </div>
+          <div id="activeMaintenance"><p class="muted-text">No active requests.</p></div>
+        </section>
+
+        <!-- Recent History (full width) -->
+        <section class="panel card td-full-width">
+          <div class="panel-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h3>
+            <a href="tenant-history.html" class="panel-link">View all</a>
+          </div>
+          <div id="recentHistory"><p class="muted-text">No recent activity.</p></div>
         </section>
       </div>
-
-      <section class="recent-activities" style="margin-top:1rem;">
-        <div class="panel-header"><h3>Recent Activity</h3></div>
-        <div id="recentHistory"></div>
-      </section>
     </main>
   </div>
+
   <script src="../js/tenant-api.js"></script>
   <script src="../js/tenant-dashboard.js"></script>
 </body>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vacating Request | RentEase</title>
   <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/tenant-dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -17,75 +18,149 @@
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
-        <a class="active" href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
+        <a class="active" href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
         <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
-        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> My History</a>
+        <a href="tenant-history.html"><i class="fa-solid fa-clock-rotate-left"></i> History</a>
         <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
       </nav>
     </aside>
     <main class="content-area">
       <header class="topbar">
-        <div><h2>Vacating Request</h2><p>Submit a move-out request. Minimum 60 days notice required.</p></div>
-        <div class="topbar-actions"><button class="button primary" id="newRequestBtn">New Request</button></div>
+        <div><h2>Vacating Request</h2><p>Submit a notice to move out. A minimum of <strong>60 days</strong> notice is required.</p></div>
+        <div class="topbar-actions"><button class="button primary" id="newRequestBtn"><i class="fa-solid fa-plus"></i> Submit Notice</button></div>
       </header>
 
-      <section id="vacatingFormSection" class="module-form card hidden">
-        <div class="panel-header"><h3>Submit Vacating Request</h3></div>
-        <form id="vacatingForm">
+      <!-- Info box -->
+      <div style="background:#FFF8E1;border:1px solid #FFE082;border-radius:12px;padding:16px 20px;margin-bottom:1.5rem;display:flex;gap:12px;align-items:flex-start">
+        <i class="fa-solid fa-circle-info" style="color:#F59E0B;margin-top:2px;flex-shrink:0;font-size:18px"></i>
+        <div>
+          <strong style="font-size:14px">Important Notice Policy</strong>
+          <p style="font-size:13px;color:var(--muted);margin:4px 0 0">You must give at least <strong>60 days' notice</strong> before your intended move-out date. Requests with less than 60 days' notice will be automatically rejected. The earliest valid date is shown in the form below.</p>
+        </div>
+      </div>
+
+      <!-- Submit Form -->
+      <section id="vacatingFormSection" class="card hidden" style="margin-bottom:1.5rem">
+        <div class="panel-header">
+          <h3>Submit Vacating Notice</h3>
+          <button class="button small outline" id="cancelBtn">Cancel</button>
+        </div>
+        <form id="vacatingForm" class="module-form">
           <div class="form-grid">
-            <div class="form-group"><label>Expected Vacating Date</label><input id="vacDate" type="date" required /></div>
+            <div class="form-group">
+              <label>Expected Move-Out Date *</label>
+              <input id="vacDate" type="date" required />
+              <small style="color:var(--muted)" id="minDateHint">Must be at least 60 days from today</small>
+            </div>
           </div>
-          <p style="color:var(--muted); font-size:0.9rem; margin:0.5rem 0;">Note: Date must be at least 60 days from today.</p>
+          <p id="vacError" class="form-error hidden"></p>
+          <p id="vacSuccess" class="form-success hidden"></p>
           <div class="form-actions">
-            <button type="submit" class="button primary">Submit Request</button>
-            <button type="button" class="button outline" id="cancelBtn">Cancel</button>
+            <button type="submit" class="button primary" id="vacSubmitBtn"><i class="fa-solid fa-paper-plane"></i> Submit Request</button>
           </div>
-          <p id="vacError" class="form-error"></p>
-          <p id="vacSuccess" style="color:var(--success); margin-top:0.5rem;"></p>
         </form>
       </section>
 
+      <!-- History Table -->
       <section class="table-panel card">
-        <table class="data-table">
-          <thead><tr><th>Request Date</th><th>Expected Vacating</th><th>Notice Days</th><th>Status</th><th>Admin Comments</th></tr></thead>
-          <tbody id="vacatingBody"></tbody>
-        </table>
+        <div class="panel-header" style="padding:1.25rem 1.5rem"><h3>Your Vacating Requests</h3></div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Request Date</th>
+                <th>Expected Move-Out</th>
+                <th>Notice Period</th>
+                <th>Status</th>
+                <th>Admin Comments</th>
+              </tr>
+            </thead>
+            <tbody id="vacatingBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   </div>
+
   <script src="../js/tenant-api.js"></script>
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
-    document.getElementById('newRequestBtn').addEventListener('click', () => document.getElementById('vacatingFormSection').classList.remove('hidden'));
-    document.getElementById('cancelBtn').addEventListener('click', () => document.getElementById('vacatingFormSection').classList.add('hidden'));
+
+    // Set minimum date (today + 60 days)
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() + 60);
+    const minDateStr = minDate.toISOString().split('T')[0];
+    document.getElementById('vacDate').min = minDateStr;
+    document.getElementById('vacDate').value = minDateStr;
+    document.getElementById('minDateHint').textContent = `Earliest valid date: ${minDate.toLocaleDateString()}`;
+
+    document.getElementById('newRequestBtn').addEventListener('click', () => {
+      document.getElementById('vacatingFormSection').classList.remove('hidden');
+      document.getElementById('vacatingFormSection').scrollIntoView({ behavior: 'smooth' });
+    });
+    document.getElementById('cancelBtn').addEventListener('click', () => {
+      document.getElementById('vacatingFormSection').classList.add('hidden');
+    });
 
     document.getElementById('vacatingForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('vacError');
       const successEl = document.getElementById('vacSuccess');
-      errorEl.textContent = ''; successEl.textContent = '';
+      const submitBtn = document.getElementById('vacSubmitBtn');
+      errorEl.classList.add('hidden');
+      successEl.classList.add('hidden');
+
+      const vacDate = document.getElementById('vacDate').value;
+      if (!vacDate) {
+        errorEl.textContent = 'Please select an expected move-out date.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting…';
+
       try {
-        const res = await tenantRequest('/tenant-portal/vacating', 'POST', {
-          expectedVacatingDate: document.getElementById('vacDate').value,
-        });
-        successEl.textContent = res.message;
+        const res = await tenantRequest('/tenant-portal/vacating', 'POST', { expectedVacatingDate: vacDate });
+        successEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${res.message}`;
+        successEl.classList.remove('hidden');
         document.getElementById('vacatingForm').reset();
+        document.getElementById('vacDate').value = minDateStr;
+        setTimeout(() => document.getElementById('vacatingFormSection').classList.add('hidden'), 3000);
         loadRequests();
-      } catch (err) { errorEl.textContent = err.message; }
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Request';
+      }
     });
 
     async function loadRequests() {
-      const res = await tenantRequest('/tenant-portal/vacating');
-      document.getElementById('vacatingBody').innerHTML = res.data.map(r => `
-        <tr>
-          <td>${r.requestDate.split('T')[0]}</td>
-          <td>${r.expectedVacatingDate.split('T')[0]}</td>
-          <td>${r.noticePeriodDays}</td>
-          <td><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
-          <td>${r.adminComments || '—'}</td>
-        </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted)">No requests found.</td></tr>';
+      try {
+        const res = await tenantRequest('/tenant-portal/vacating');
+        const tbody = document.getElementById('vacatingBody');
+        if (!res.data.length) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem">No vacating requests submitted yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = res.data.map(r => `
+          <tr>
+            <td>${r.requestDate.split('T')[0]}</td>
+            <td><strong>${r.expectedVacatingDate.split('T')[0]}</strong></td>
+            <td>${r.noticePeriodDays} days</td>
+            <td><span class="status-badge ${r.status.toLowerCase()}">${r.status}</span></td>
+            <td>${r.adminComments || '—'}</td>
+          </tr>`).join('');
+      } catch (err) {
+        document.getElementById('vacatingBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:1rem">${err.message}</td></tr>`;
+      }
     }
+
     loadRequests();
   </script>
 </body>

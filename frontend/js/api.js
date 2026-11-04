@@ -1,4 +1,10 @@
-const API_BASE_URL = 'https://rental-management-website.onrender.com/api';
+// Detect API base URL: use same origin in production, configurable for dev
+const API_BASE_URL = (() => {
+  // If running from file:// or a live-server on a different port, use the backend URL
+  if (window.location.protocol === 'file:') return 'http://localhost:5000/api';
+  // Same-origin (served by Express)
+  return '/api';
+})();
 
 async function apiRequest(path, method = 'GET', body = null) {
   const token = localStorage.getItem('rentease_token');
@@ -21,14 +27,14 @@ function ensureAuth() {
   const token = localStorage.getItem('rentease_token');
   if (!token) {
     const message = encodeURIComponent('Please login first to access this page');
-    window.location.href = `../login.html?message=${message}`;
+    window.location.href = '../login.html?message=' + message;
   }
 }
 
 function logout() {
   localStorage.removeItem('rentease_token');
   localStorage.removeItem('rentease_admin');
-  window.location.href = '../login.html';
+  window.location.href = '/';
 }
 
 function showNotificationBadge(count) {

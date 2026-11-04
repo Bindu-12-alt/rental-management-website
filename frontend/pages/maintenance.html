@@ -25,13 +25,163 @@
         <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
       </nav>
     </aside>
+
     <main class="content-area">
-      <header class="topbar"><div><h2>Maintenance Requests</h2><p>Manage issue reports and completion status.</p></div><div class="topbar-actions"><div class="topbar-search"><input id="searchInput" type="search" placeholder="Search maintenance" /><i class="fa-solid fa-magnifying-glass"></i></div><button class="button primary" id="createMaintenanceBtn">New Request</button></div></header>
-      <section class="filters-panel"><select id="statusFilter"><option value="">All Statuses</option><option value="Pending">Pending</option><option value="In Progress">In Progress</option><option value="Completed">Completed</option><option value="Rejected">Rejected</option></select></section>
-      <section class="table-panel card"><table class="data-table"><thead><tr><th>Apartment</th><th>Tenant</th><th>Issue</th><th>Priority</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="maintenanceTableBody"></tbody></table></section>
-      <section id="maintenanceFormSection" class="card hidden"><div class="panel-header"><h3 id="maintenanceFormTitle">New Maintenance Request</h3></div><form id="maintenanceForm" class="module-form"><div class="form-grid"><div class="form-group"><label>Apartment</label><select id="maintApartment" required><option value="">Select Apartment</option></select></div><div class="form-group"><label>Tenant</label><select id="maintTenant" required><option value="">Select Tenant</option></select></div><div class="form-group"><label>Issue Title</label><input id="maintTitle" required /></div><div class="form-group"><label>Description</label><textarea id="maintDescription" required></textarea></div><div class="form-group"><label>Priority</label><select id="maintPriority"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select></div><div class="form-group"><label>Request Date</label><input id="maintDate" type="date" required /></div></div><div class="form-actions"><button type="submit" class="button primary">Save Request</button><button type="button" id="cancelMaintenanceBtn" class="button outline">Cancel</button></div><p id="maintenanceFormError" class="form-error"></p></form></section>
+      <header class="topbar">
+        <div>
+          <h2>Maintenance Requests</h2>
+          <p>Manage tenant issue reports, track progress, and update resolutions.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-search">
+            <input id="searchInput" type="search" placeholder="Search by title or description…" />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+          <button class="button primary" id="createMaintenanceBtn"><i class="fa-solid fa-plus"></i> Log Request</button>
+        </div>
+      </header>
+
+      <!-- Filters -->
+      <section class="filters-panel">
+        <select id="statusFilter">
+          <option value="">All Statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+          <option value="Closed">Closed</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+        <select id="priorityFilter">
+          <option value="">All Priorities</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+        <select id="categoryFilter">
+          <option value="">All Categories</option>
+          <option value="Plumbing">Plumbing</option>
+          <option value="Electrical">Electrical</option>
+          <option value="Cleaning">Cleaning</option>
+          <option value="Security">Security</option>
+          <option value="Appliance">Appliance</option>
+          <option value="Structural">Structural</option>
+          <option value="HVAC">HVAC</option>
+          <option value="Other">Other</option>
+        </select>
+      </section>
+
+      <!-- Table -->
+      <section class="table-panel card">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Apartment</th>
+                <th>Tenant</th>
+                <th>Issue</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Photos</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="maintenanceTableBody">
+              <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Create / Edit Form -->
+      <section id="maintenanceFormSection" class="card hidden" style="margin-top:1.5rem">
+        <div class="panel-header">
+          <h3 id="maintenanceFormTitle">Log Maintenance Request</h3>
+          <button class="button small outline" id="cancelMaintenanceBtn">Cancel</button>
+        </div>
+        <form id="maintenanceForm" class="module-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Apartment *</label>
+              <select id="maintApartment" required><option value="">Select Apartment</option></select>
+            </div>
+            <div class="form-group">
+              <label>Tenant *</label>
+              <select id="maintTenant" required><option value="">Select Tenant</option></select>
+            </div>
+            <div class="form-group">
+              <label>Issue Title *</label>
+              <input id="maintTitle" placeholder="e.g. Leaking tap" required />
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <select id="maintCategory">
+                <option value="Other">Other</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Security">Security</option>
+                <option value="Appliance">Appliance</option>
+                <option value="Structural">Structural</option>
+                <option value="HVAC">HVAC / AC</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Priority</label>
+              <select id="maintPriority">
+                <option value="Low">Low</option>
+                <option value="Medium" selected>Medium</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Request Date *</label>
+              <input id="maintDate" type="date" required />
+            </div>
+            <div class="form-group full-width">
+              <label>Description *</label>
+              <textarea id="maintDescription" rows="3" required placeholder="Describe the issue in detail…"></textarea>
+            </div>
+
+            <!-- Edit-only fields -->
+            <div class="form-group" id="statusField">
+              <label>Status</label>
+              <select id="maintStatus">
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="form-group" id="assignedField">
+              <label>Assigned To</label>
+              <input id="maintAssigned" placeholder="Technician name or contact" />
+            </div>
+            <div class="form-group full-width" id="adminCommentsField">
+              <label>Admin Notes / Comments</label>
+              <textarea id="maintAdminComments" rows="2" placeholder="Progress notes or instructions…"></textarea>
+            </div>
+            <div class="form-group full-width" id="resolutionField">
+              <label>Resolution Details</label>
+              <textarea id="maintResolution" rows="2" placeholder="How the issue was resolved…"></textarea>
+            </div>
+          </div>
+
+          <p id="maintenanceFormError" class="form-error hidden"></p>
+          <div class="form-actions">
+            <button type="submit" class="button primary" id="maintSubmitBtn">
+              <i class="fa-solid fa-floppy-disk"></i> Save Request
+            </button>
+            <button type="button" class="button outline" id="cancelMaintenanceBtn2">Cancel</button>
+          </div>
+        </form>
+      </section>
     </main>
   </div>
+
   <script src="../js/api.js"></script>
   <script src="../js/maintenance.js"></script>
 </body>
