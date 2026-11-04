@@ -1,10 +1,4 @@
-// Detect API base URL: use same origin in production, configurable for dev
-const API_BASE_URL = (() => {
-  // If running from file:// or a live-server on a different port, use the backend URL
-  if (window.location.protocol === 'file:') return 'http://localhost:5000/api';
-  // Same-origin (served by Express)
-  return '/api';
-})();
+const API_BASE_URL = 'https://rentease-m4ev.onrender.com/api';
 
 async function apiRequest(path, method = 'GET', body = null) {
   const token = localStorage.getItem('rentease_token');

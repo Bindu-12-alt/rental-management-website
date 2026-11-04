@@ -3,10 +3,7 @@
  * Handles: hero slideshow, search, listings, filters, modal, how-it-works tabs, contact form
  */
 
-const HOME_API = (() => {
-  if (window.location.protocol === 'file:') return 'http://localhost:5000/api';
-  return '/api';
-})();
+const HOME_API = 'https://rentease-m4ev.onrender.com/api';
 
 // ═══════════════════════════════════════════════════════════
 // Hero Slideshow

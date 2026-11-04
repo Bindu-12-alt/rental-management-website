@@ -1,8 +1,4 @@
-// FIX: Use same-origin detection instead of hardcoded localhost
-const TENANT_API_BASE = (() => {
-  if (window.location.protocol === 'file:') return 'http://localhost:5000/api';
-  return '/api';
-})();
+const TENANT_API_BASE = 'https://rentease-m4ev.onrender.com/api';
 
 async function tenantRequest(path, method = 'GET', body = null) {
   const token = localStorage.getItem('tenant_token');
