@@ -201,13 +201,14 @@ function setupContactAdmin() {
     const input = document.getElementById('adminMsgInput');
     const message = input?.value.trim();
     if (!message) return;
+    const channel = document.getElementById('adminMessageChannel')?.value || 'email';
     if (msgEl) { msgEl.classList.add('hidden'); msgEl.className = 'form-msg hidden'; }
 
     try {
-      await tenantRequest('/tenant-portal/contact-admin', 'POST', { message });
+      const response = await tenantRequest('/tenant-portal/contact-admin', 'POST', { message, channel });
       input.value = '';
       if (msgEl) {
-        msgEl.textContent = '✓ Message sent to your property manager.';
+        msgEl.textContent = `✓ ${response.message}`;
         msgEl.className = 'form-msg success';
         msgEl.classList.remove('hidden');
         setTimeout(() => msgEl.classList.add('hidden'), 4000);

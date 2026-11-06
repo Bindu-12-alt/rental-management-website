@@ -3,6 +3,7 @@ const Admin = require('../models/Admin');
 const Tenant = require('../models/Tenant');
 const { sendEmail, templates } = require('../services/emailService');
 const { generateAdminToken, generateTenantToken } = require('../utils/authTokens');
+const { getAllowedAdminEmail } = require('../utils/adminEmail');
 
 async function loginAdmin(req, res, next) {
   try {
@@ -39,7 +40,7 @@ async function registerAdmin(req, res, next) {
     const { name, email, password } = req.body;
 
     // Use env variable instead of hardcoded email
-    const allowedEmail = (process.env.ADMIN_EMAIL || 'bindusrikavuri@gmail.com').toLowerCase().trim();
+    const allowedEmail = getAllowedAdminEmail();
     if (!email || email.toLowerCase().trim() !== allowedEmail) {
       const err = new Error('Registration is not allowed for this email.');
       err.statusCode = 403;

@@ -78,6 +78,7 @@ router.get('/payments', protectTenant, async (req, res, next) => {
 router.get('/agreements', protectTenant, async (req, res, next) => {
   try {
     const agreements = await RentalAgreement.find({ tenant: req.tenant._id })
+      .populate('tenant', 'fullName email')
       .populate('apartment', 'apartmentNumber buildingDetails floorDetails')
       .sort({ startDate: -1 });
     res.json({ success: true, data: agreements });
@@ -264,8 +265,7 @@ router.get('/history', protectTenant, async (req, res, next) => {
   try {
     const history = await History.find({ tenant: req.tenant._id })
       .populate('apartment', 'apartmentNumber')
-      .sort({ createdAt: -1 })
-      .limit(100);
+      .sort({ createdAt: -1 });
     res.json({ success: true, data: history });
   } catch (e) { next(e); }
 });
@@ -273,32 +273,84 @@ router.get('/history', protectTenant, async (req, res, next) => {
 // ── WhatsApp contact admin ────────────────────────────────────────────────────
 router.post('/contact-admin', protectTenant, async (req, res, next) => {
   try {
-    const { message } = req.body;
-    if (!message || message.trim().length < 5) {
-      const err = new Error('Message must be at least 5 characters');
+    const { message, channel = 'whatsapp' } = req.body;
+    if (typeof message !== 'string' || message.trim().length < 5 || message.trim().length > 500) {
+      const err = new Error('Message must be between 5 and 500 characters');
+      err.statusCode = 400;
+      return next(err);
+    }
+    if (!['email', 'whatsapp', 'both'].includes(channel)) {
+      const err = new Error('Choose email, WhatsApp, or both as the message channel');
       err.statusCode = 400;
       return next(err);
     }
 
-    const adminPhone = process.env.ADMIN_WHATSAPP_PHONE;
-    let waSent = false;
-    if (adminPhone) {
-      const result = await sendWhatsApp(adminPhone, waTemplates.contactAdmin({
-        tenantName: req.tenant.fullName,
-        phone: req.tenant.phone,
-        message: message.trim(),
-      }));
-      waSent = result.success || result.devMode;
+    const cleanMessage = message.trim();
+    const results = {};
+    if (channel === 'email' || channel === 'both') {
+      if (!process.env.ADMIN_EMAIL) {
+        results.email = { success: false, error: 'Admin email is not configured' };
+      } else {
+        const { sendEmail, templates } = require('../services/emailService');
+        results.email = await sendEmail({
+          to: process.env.ADMIN_EMAIL,
+          ...templates.tenantContactEmail({
+            tenantName: req.tenant.fullName,
+            tenantEmail: req.tenant.email,
+            tenantPhone: req.tenant.phone,
+            message: cleanMessage,
+          }),
+        });
+      }
+    }
+    if (channel === 'whatsapp' || channel === 'both') {
+      if (!process.env.ADMIN_WHATSAPP_PHONE) {
+        results.whatsapp = { success: false, error: 'Admin WhatsApp is not configured' };
+      } else {
+        results.whatsapp = await sendWhatsApp(process.env.ADMIN_WHATSAPP_PHONE, waTemplates.contactAdmin({
+          tenantName: req.tenant.fullName,
+          phone: req.tenant.phone,
+          message: cleanMessage,
+        }));
+      }
+    }
+
+    const successfulChannels = Object.entries(results)
+      .filter(([, result]) => result.success || result.devMode)
+      .map(([name]) => name);
+    const sent = successfulChannels.length > 0;
+    if (!sent) {
+      const allUnconfigured = Object.values(results).every((result) => result.error?.includes('not configured'));
+      const err = new Error(allUnconfigured
+        ? 'No selected contact channel is configured. Please contact your property manager.'
+        : 'The message could not be delivered. Please try again later.');
+      err.statusCode = allUnconfigured ? 503 : 502;
+      return next(err);
     }
 
     await createNotification({
       type: 'Tenant Message',
-      message: `Message from ${req.tenant.fullName}: ${message.substring(0, 100)}`,
+      message: `Message from ${req.tenant.fullName}: ${cleanMessage.substring(0, 100)}`,
       relatedTenant: req.tenant._id,
       priority: 'Medium',
     });
 
-    res.json({ success: true, waSent, message: 'Message sent to admin.' });
+    const deliveredChannels = successfulChannels.filter((channelName) => results[channelName].success);
+    const loggedChannels = successfulChannels.filter((channelName) => results[channelName].devMode);
+    const partiallyDelivered = Object.values(results).some((result) => !result.success && !result.devMode);
+    let deliveryMessage = 'Message sent to admin.';
+    if (deliveredChannels.length && loggedChannels.length) {
+      deliveryMessage = `Message sent using ${deliveredChannels.join(' and ')}; ${loggedChannels.join(' and ')} was logged in development mode only.`;
+    } else if (loggedChannels.length) {
+      deliveryMessage = 'Message logged in development mode; no message was delivered.';
+    } else if (partiallyDelivered) {
+      deliveryMessage = `Message sent using ${deliveredChannels.join(' and ')}; another selected channel was unavailable.`;
+    }
+    res.json({
+      success: true,
+      results,
+      message: deliveryMessage,
+    });
   } catch (e) { next(e); }
 });
 

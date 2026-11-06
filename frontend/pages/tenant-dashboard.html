@@ -82,12 +82,17 @@
               <span>Vacating</span>
             </a>
           </div>
-          <!-- Contact admin via WhatsApp -->
+          <!-- Contact admin by email or WhatsApp -->
           <div class="contact-admin-box" id="contactAdminBox">
-            <p><i class="fa-brands fa-whatsapp"></i> Need help? Send a message to your property manager.</p>
+            <p><i class="fa-solid fa-envelope"></i> Need help? Send a message to your property manager.</p>
             <form id="contactAdminForm">
               <textarea id="adminMsgInput" rows="2" placeholder="Type your message…" maxlength="500"></textarea>
-              <button type="submit" class="button small primary">Send via WhatsApp</button>
+              <select id="adminMessageChannel" aria-label="Message channel">
+                <option value="email">Email</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="both">Email and WhatsApp</option>
+              </select>
+              <button type="submit" class="button small primary">Send message</button>
             </form>
             <div class="form-msg hidden" id="contactAdminMsg"></div>
           </div>

@@ -28,7 +28,10 @@ async function loadTenants() {
           <td>${tenant.address}</td>
           <td>${tenant.apartment?.apartmentNumber || '—'}</td>
           <td>${tenant.status}</td>
-          <td><button class="button small" onclick="editTenant('${tenant._id}')">Edit</button></td>
+          <td>
+            <button class="button small" onclick="editTenant('${tenant._id}')">Edit</button>
+            <button class="button small outline" onclick="emailTenant('${tenant._id}')">Email</button>
+          </td>
         </tr>
       `;
     }).join('');
@@ -125,3 +128,15 @@ window.editTenant = async function (id) {
   }
 };
 
+window.emailTenant = async function (id) {
+  const subject = prompt('Email subject:');
+  if (!subject || !subject.trim()) return;
+  const message = prompt('Message to tenant:');
+  if (!message || !message.trim()) return;
+  try {
+    const result = await apiRequest(`/tenants/${id}/email`, 'POST', { subject: subject.trim(), message: message.trim() });
+    alert(result.data.devMode ? 'Email logged in development mode; no email was delivered.' : 'Email sent to tenant.');
+  } catch (error) {
+    alert(error.message);
+  }
+};

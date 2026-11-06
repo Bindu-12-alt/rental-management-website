@@ -1,6 +1,7 @@
 const Tenant = require('../models/Tenant');
 const Apartment = require('../models/Apartment');
 const History = require('../models/History');
+const { sendEmail, templates } = require('../services/emailService');
 
 async function getTenants(req, res, next) {
   try {
@@ -207,4 +208,42 @@ async function updateTenant(req, res, next) {
   }
 }
 
-module.exports = { getTenants, getTenantById, createTenant, updateTenant };
+async function emailTenant(req, res, next) {
+  try {
+    const { subject, message } = req.body;
+    if (typeof subject !== 'string' || subject.trim().length < 3 || subject.trim().length > 120 || /[\r\n]/.test(subject)
+      || typeof message !== 'string' || message.trim().length < 5 || message.trim().length > 5000) {
+      const err = new Error('Subject (3–120 characters) and message (5–5000 characters) are required');
+      err.statusCode = 400;
+      return next(err);
+    }
+
+    const tenant = await Tenant.findById(req.params.id).select('fullName email');
+    if (!tenant) {
+      const err = new Error('Tenant not found');
+      err.statusCode = 404;
+      return next(err);
+    }
+
+    const result = await sendEmail({
+      to: tenant.email,
+      ...templates.directMessageEmail({
+        recipientName: tenant.fullName,
+        senderName: 'Your RentEase property manager',
+        subject: subject.trim(),
+        message: message.trim(),
+      }),
+    });
+    if (!result.success && !result.devMode) {
+      const err = new Error(result.error || 'Email could not be sent');
+      err.statusCode = 502;
+      return next(err);
+    }
+
+    res.json({ success: true, data: { email: tenant.email, devMode: Boolean(result.devMode) } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getTenants, getTenantById, createTenant, updateTenant, emailTenant };

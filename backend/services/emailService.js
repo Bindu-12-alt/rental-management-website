@@ -6,6 +6,16 @@ const nodemailer = require('nodemailer');
 
 const DEV_MODE = process.env.EMAIL_DEV_MODE === 'true' || !process.env.EMAIL_USER;
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[character]));
+}
+
 let transporter;
 
 function getTransporter() {
@@ -205,20 +215,30 @@ function maintenanceUpdatedEmail({ fullName, title, status, adminComments }) {
   };
 }
 
-function agreementCreatedEmail({ fullName, agreementId, startDate, expiryDate, monthlyRent, apartmentNumber }) {
+function agreementCreatedEmail({
+  fullName,
+  agreementId,
+  startDate,
+  expiryDate,
+  monthlyRent,
+  apartmentNumber,
+  status = 'Active',
+  event = 'created',
+}) {
+  const eventLabel = { created: 'Created', updated: 'Updated', renewed: 'Renewed' }[event] || 'Updated';
   return {
-    subject: `Rental Agreement Created — ${agreementId}`,
+    subject: `Rental Agreement ${eventLabel} — ${agreementId}`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
-      <p>A rental agreement has been created for your apartment.</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
+      <p>A rental agreement has been ${event} for your apartment.</p>
       <div class="info-box">
         <p class="label">Agreement Details</p>
-        <p><strong>Agreement ID:</strong> ${agreementId}</p>
-        <p><strong>Apartment:</strong> ${apartmentNumber}</p>
-        <p><strong>Start Date:</strong> ${startDate}</p>
-        <p><strong>Expiry Date:</strong> ${expiryDate}</p>
-        <p><strong>Monthly Rent:</strong> ₹${monthlyRent}</p>
-        <p><strong>Status:</strong> <span class="status-badge badge-green">Active</span></p>
+        <p><strong>Agreement ID:</strong> ${escapeHtml(agreementId)}</p>
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Start Date:</strong> ${escapeHtml(startDate)}</p>
+        <p><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}</p>
+        <p><strong>Monthly Rent:</strong> ₹${escapeHtml(monthlyRent)}</p>
+        <p><strong>Status:</strong> ${escapeHtml(status)}</p>
       </div>
       <p>Please review the agreement details in your tenant portal.</p>
     `),
@@ -238,6 +258,33 @@ function agreementRenewalReminderEmail({ fullName, agreementId, expiryDate, apar
         <p><strong>Expiry Date:</strong> <strong style="color:#DC2626">${expiryDate}</strong></p>
       </div>
       <p>Contact your property manager before the expiry date to ensure a smooth renewal process.</p>
+    `),
+  };
+}
+
+function tenantContactEmail({ tenantName, tenantEmail, tenantPhone, message }) {
+  return {
+    subject: 'New RentEase tenant message',
+    html: baseTemplate(`
+      <p>A tenant has contacted you through RentEase.</p>
+      <div class="info-box">
+        <p><strong>Name:</strong> ${escapeHtml(tenantName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(tenantEmail)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(tenantPhone || 'Not provided')}</p>
+        <p><strong>Message:</strong></p>
+        <p style="white-space:pre-wrap">${escapeHtml(message)}</p>
+      </div>
+    `),
+  };
+}
+
+function directMessageEmail({ recipientName, senderName, subject, message }) {
+  return {
+    subject,
+    html: baseTemplate(`
+      <p>Hi <strong>${escapeHtml(recipientName)}</strong>,</p>
+      <p>You have a new message from ${escapeHtml(senderName)}.</p>
+      <div class="info-box"><p style="white-space:pre-wrap">${escapeHtml(message)}</p></div>
     `),
   };
 }
@@ -270,6 +317,8 @@ module.exports = {
     maintenanceUpdatedEmail,
     agreementCreatedEmail,
     agreementRenewalReminderEmail,
+    tenantContactEmail,
+    directMessageEmail,
     vacatingRequestEmail,
   },
 };

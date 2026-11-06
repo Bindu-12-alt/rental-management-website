@@ -2,6 +2,7 @@ const { OAuth2Client } = require('google-auth-library');
 const Admin = require('../models/Admin');
 const Tenant = require('../models/Tenant');
 const { generateAdminToken, generateTenantToken } = require('../utils/authTokens');
+const { getAllowedAdminEmail } = require('../utils/adminEmail');
 
 function getGoogleConfig(req, res) {
   res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
@@ -45,8 +46,8 @@ async function loginWithGoogle(req, res, next) {
     const account = await model.findOne({ email });
 
     if (!account && role === 'admin') {
-      const allowedEmail = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
-      if (!allowedEmail || email !== allowedEmail) {
+      const allowedEmail = getAllowedAdminEmail();
+      if (email !== allowedEmail) {
         return next(authError('This Google email is not authorized to register as the admin.', 403));
       }
     }

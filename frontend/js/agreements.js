@@ -90,6 +90,7 @@ async function loadAgreements() {
     if (search) query.append('search', search);
     if (status) query.append('status', status);
     const response = await apiRequest(`/agreements?${query.toString()}`);
+    window.rentEaseAgreementDocuments.replace(response.data);
     const body = document.getElementById('agreementsTableBody');
     body.innerHTML = response.data.map((agreement) => `
       <tr>
@@ -101,6 +102,7 @@ async function loadAgreements() {
         <td><span class="status-badge ${agreement.status.replace(' ', '-').toLowerCase()}">${agreement.status}</span></td>
         <td>₹${agreement.monthlyRent.toFixed(2)}</td>
         <td>
+          <button class="button small outline" onclick="window.rentEaseAgreementDocuments.open('${agreement._id}')">Print / PDF</button>
           <button class="button small" onclick="editAgreement('${agreement._id}')">Edit</button>
           ${agreement.status === 'Active' || agreement.status === 'Expiring Soon' ? `<button class="button small" style="background:#7B3F00" onclick="renewAgreement('${agreement._id}')">Renew</button>` : ''}
         </td>
@@ -133,4 +135,3 @@ window.editAgreement = async function (id) {
     console.error(error);
   }
 };
-

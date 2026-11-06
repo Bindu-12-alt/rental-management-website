@@ -27,17 +27,19 @@
       <header class="topbar"><div><h2>My Agreement</h2><p>View your rental agreement details.</p></div></header>
       <section class="table-panel card">
         <table class="data-table">
-          <thead><tr><th>Agreement ID</th><th>Apartment</th><th>Start Date</th><th>Expiry Date</th><th>Monthly Rent</th><th>Cycle</th><th>Status</th></tr></thead>
+          <thead><tr><th>Agreement ID</th><th>Apartment</th><th>Start Date</th><th>Expiry Date</th><th>Monthly Rent</th><th>Cycle</th><th>Status</th><th>Document</th></tr></thead>
           <tbody id="agreementsBody"></tbody>
         </table>
       </section>
     </main>
   </div>
   <script src="../js/tenant-api.js"></script>
+  <script src="../js/agreement-documents.js"></script>
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
     tenantRequest('/tenant-portal/agreements').then(res => {
+      window.rentEaseAgreementDocuments.replace(res.data);
       document.getElementById('agreementsBody').innerHTML = res.data.map(a => `
         <tr>
           <td>${a.agreementId}</td>
@@ -47,7 +49,8 @@
           <td>₹${a.monthlyRent.toFixed(2)}</td>
           <td>${a.rentalCycle}</td>
           <td><span class="status-badge ${a.status.replace(' ','-').toLowerCase()}">${a.status}</span></td>
-        </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted)">No agreements found.</td></tr>';
+          <td><button class="button small outline" onclick="window.rentEaseAgreementDocuments.open('${a._id}')">Print / PDF</button></td>
+        </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">No agreements found.</td></tr>';
     }).catch(console.error);
   </script>
 </body>

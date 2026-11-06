@@ -9,6 +9,27 @@ function daysBetween(a, b) {
   return Math.ceil((b - a) / (1000 * 60 * 60 * 24));
 }
 
+async function emailAgreementToTenant(agreement, eventLabel) {
+  try {
+    const tenant = await Tenant.findById(agreement.tenant).select('fullName email');
+    const apartment = await Apartment.findById(agreement.apartment).select('apartmentNumber');
+    if (!tenant || !tenant.email) return;
+    const emailData = templates.agreementCreatedEmail({
+      fullName: tenant.fullName,
+      agreementId: agreement.agreementId,
+      startDate: agreement.startDate.toLocaleDateString(),
+      expiryDate: agreement.expiryDate.toLocaleDateString(),
+      monthlyRent: agreement.monthlyRent,
+      apartmentNumber: apartment?.apartmentNumber || '—',
+      status: agreement.status,
+      event: eventLabel === 'creation' ? 'created' : eventLabel === 'update' ? 'updated' : 'renewed',
+    });
+    await sendEmail({ to: tenant.email, ...emailData });
+  } catch (emailErr) {
+    console.error(`[Agreement] ${eventLabel} email notification failed:`, emailErr.message);
+  }
+}
+
 async function getAgreements(req, res, next) {
   try {
     const { search, status, tenant, apartment } = req.query;
@@ -111,23 +132,7 @@ async function createAgreement(req, res, next) {
       });
     }
 
-    // Send email notification (non-blocking)
-    try {
-      const tenantDoc = await Tenant.findById(tenant).select('fullName email');
-      if (tenantDoc && tenantDoc.email) {
-        const emailData = templates.agreementCreatedEmail({
-          fullName: tenantDoc.fullName,
-          agreementId,
-          startDate: new Date(startDate).toLocaleDateString(),
-          expiryDate: new Date(expiryDate).toLocaleDateString(),
-          monthlyRent,
-          apartmentNumber: apt.apartmentNumber,
-        });
-        await sendEmail({ to: tenantDoc.email, ...emailData });
-      }
-    } catch (emailErr) {
-      console.error('[Agreement] Email notification failed:', emailErr.message);
-    }
+    await emailAgreementToTenant(agreement, 'creation');
 
     res.status(201).json({ success: true, data: agreement });
   } catch (error) {
@@ -168,6 +173,7 @@ async function updateAgreement(req, res, next) {
       apartment: agreement.apartment,
       relatedAgreement: agreement._id,
     });
+    await emailAgreementToTenant(agreement, 'update');
     res.json({ success: true, data: agreement });
   } catch (error) {
     next(error);
@@ -234,6 +240,7 @@ async function renewAgreement(req, res, next) {
       relatedApartment: agreement.apartment,
       priority: 'Medium',
     });
+    await emailAgreementToTenant(renewedAgreement, 'renewal');
 
     res.status(201).json({ success: true, data: renewedAgreement });
   } catch (error) {
