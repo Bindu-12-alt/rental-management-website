@@ -19,6 +19,15 @@ function setupMaintenancePage() {
   document.getElementById('statusFilter')?.addEventListener('change', loadMaintenanceRequests);
   document.getElementById('priorityFilter')?.addEventListener('change', loadMaintenanceRequests);
   document.getElementById('categoryFilter')?.addEventListener('change', loadMaintenanceRequests);
+  document.getElementById('maintenanceTableBody')?.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-photo-index]');
+    if (!button) return;
+    downloadPrivateImage(
+      `${API_BASE_URL}/maintenance/${encodeURIComponent(button.dataset.requestId)}/photos/${encodeURIComponent(button.dataset.photoIndex)}`,
+      'rentease_token',
+      button.dataset.filename,
+    ).catch((error) => window.alert(error.message));
+  });
 
   // Set today's date as default
   const dateInput = document.getElementById('maintDate');
@@ -133,26 +142,33 @@ async function loadMaintenanceRequests() {
 
     tbody.innerHTML = response.data.map((req) => `
       <tr>
-        <td><strong>${req.apartment?.apartmentNumber || '—'}</strong></td>
-        <td style="font-size:13px">${req.tenant?.fullName || '—'}</td>
+        <td><strong>${escapeMaintenanceText(req.apartment?.apartmentNumber || '—')}</strong></td>
+        <td style="font-size:13px">${escapeMaintenanceText(req.tenant?.fullName || '—')}</td>
         <td>
-          <strong style="font-size:14px">${req.title}</strong>
-          <br><small style="color:var(--muted)">${req.description.substring(0, 50)}${req.description.length > 50 ? '…' : ''}</small>
+          <strong style="font-size:14px">${escapeMaintenanceText(req.title)}</strong>
+          <br><small style="color:var(--muted)">${escapeMaintenanceText(req.description.substring(0, 50))}${req.description.length > 50 ? '…' : ''}</small>
         </td>
-        <td><span class="cat-badge">${req.category || 'Other'}</span></td>
-        <td><span class="status-badge" style="background:${priorityColor[req.priority]}">${req.priority}</span></td>
-        <td style="font-size:13px">${req.requestDate.split('T')[0]}</td>
-        <td><span class="status-badge ${statusClass[req.status] || 'pending'}">${req.status}</span></td>
-        <td style="font-size:13px">${req.assignedTo || '<span style="color:var(--muted)">Unassigned</span>'}</td>
-        <td>${req.photos && req.photos.length ? `<a href="${req.photos[0]}" target="_blank" style="color:var(--primary)"><i class="fa-solid fa-image"></i> ${req.photos.length}</a>` : '—'}</td>
+        <td><span class="cat-badge">${escapeMaintenanceText(req.category || 'Other')}</span></td>
+        <td><span class="status-badge" style="background:${priorityColor[req.priority] || '#64748B'}">${escapeMaintenanceText(req.priority)}</span></td>
+        <td style="font-size:13px">${escapeMaintenanceText(req.requestDate.split('T')[0])}</td>
+        <td><span class="status-badge ${statusClass[req.status] || 'pending'}">${escapeMaintenanceText(req.status)}</span></td>
+        <td style="font-size:13px">${req.assignedTo ? escapeMaintenanceText(req.assignedTo) : '<span style="color:var(--muted)">Unassigned</span>'}</td>
+        <td>${req.photos && req.photos.length ? req.photos.map((_, index) => `<button type="button" class="button small outline" data-photo-index="${index}" data-request-id="${escapeMaintenanceText(req._id)}" data-filename="maintenance-photo-${index + 1}">Photo ${index + 1}</button>`).join(' ') : '—'}</td>
         <td>
           <button class="button small" onclick="editMaintenance('${req._id}')"><i class="fa-solid fa-pen"></i> Update</button>
         </td>
       </tr>
     `).join('');
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--danger);padding:1rem">${error.message}</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--danger);padding:1rem"></td></tr>';
+    tbody.querySelector('td').textContent = error.message;
   }
+}
+
+function escapeMaintenanceText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
 }
 
 window.editMaintenance = async function (id) {

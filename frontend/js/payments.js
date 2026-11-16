@@ -21,6 +21,8 @@ function initializePaymentPage() {
   if (searchInput) searchInput.addEventListener('input', loadPayments);
   const statusFilter = document.getElementById('statusFilter');
   if (statusFilter) statusFilter.addEventListener('change', loadPayments);
+  populateSelect('payTenant', '/tenants', '_id', (tenant) => `${tenant.fullName} (${tenant.email})`, 'Select Tenant');
+  populateSelect('payApartment', '/apartments', '_id', (apartment) => `${apartment.apartmentNumber} — ${apartment.buildingDetails}`, 'Select Apartment');
 }
 
 let editingPaymentId = null;
@@ -66,7 +68,7 @@ async function submitPaymentForm(event) {
     transactionId: document.getElementById('payTransaction').value.trim(),
     status: document.getElementById('payStatus').value,
   };
-  if (!data.tenant || !data.apartment || !data.amount || !data.dueDate || !data.paymentDate || !data.method) {
+  if (!data.tenant || !data.apartment || !Number.isFinite(data.amount) || data.amount < 0 || !data.dueDate || !data.paymentDate || !data.method) {
     errorEl.textContent = 'Please complete all required fields.';
     return;
   }
@@ -92,21 +94,51 @@ async function loadPayments() {
     if (status) query.append('status', status);
     const response = await apiRequest(`/payments?${query.toString()}`);
     const body = document.getElementById('paymentsTableBody');
-    body.innerHTML = response.data.map((payment) => `
-      <tr>
-        <td>${payment.tenant?.fullName || '—'}</td>
-        <td>${payment.apartment?.apartmentNumber || '—'}</td>
-        <td>₹${payment.amount.toFixed(2)}</td>
-        <td>${payment.dueDate.split('T')[0]}</td>
-        <td>${payment.paymentDate.split('T')[0]}</td>
-        <td><span class="status-badge ${payment.status.toLowerCase()}">${payment.status}</span></td>
-        <td><button class="button small" onclick="editPayment('${payment._id}')">Edit</button></td>
-      </tr>
-    `).join('');
+    body.innerHTML = response.data.map((payment) => {
+      const emailStatus = payment.confirmationEmailStatus || 'not_sent';
+      const emailSendingAt = new Date(payment.confirmationEmailSendingAt).getTime();
+      const staleEmailSend = emailStatus === 'sending'
+        && (!Number.isFinite(emailSendingAt) || Date.now() - emailSendingAt > 10 * 60 * 1000);
+      const retryButton = payment.status === 'Paid' && emailStatus !== 'sent'
+        && (emailStatus !== 'sending' || staleEmailSend)
+        ? `<button class="button small outline" onclick="retryPaymentEmail('${payment._id}')">Retry email</button>`
+        : '';
+      const reminderStatus = payment.rentReminderSentAt
+        ? `Sent ${new Date(payment.rentReminderSentAt).toLocaleString()}`
+        : payment.rentReminderError ? `Failed: ${payment.rentReminderError}` : 'Not due';
+      return `<tr>
+        <td>${escapePaymentText(payment.tenant?.fullName || '—')}</td>
+        <td>${escapePaymentText(payment.apartment?.apartmentNumber || '—')}</td>
+        <td>₹${Number(payment.amount).toFixed(2)}</td>
+        <td>${escapePaymentText(payment.dueDate.split('T')[0])}</td>
+        <td>${escapePaymentText(payment.paymentDate.split('T')[0])}</td>
+        <td><span class="status-badge">${escapePaymentText(payment.status)}</span></td>
+        <td>${escapePaymentText(reminderStatus)}</td>
+        <td title="${escapePaymentText(payment.confirmationEmailError || '')}">${escapePaymentText(emailStatus)}</td>
+        <td>${retryButton}<button class="button small" onclick="editPayment('${escapePaymentText(payment._id)}')">Edit</button></td>
+      </tr>`;
+    }).join('');
   } catch (error) {
     console.error(error);
   }
 }
+
+function escapePaymentText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
+}
+
+window.retryPaymentEmail = async function (id) {
+  try {
+    const result = await apiRequest(`/payments/${encodeURIComponent(id)}/email`, 'POST');
+    window.alert(result.message);
+    await loadPayments();
+  } catch (error) {
+    await loadPayments();
+    window.alert(error.message);
+  }
+};
 
 window.editPayment = async function (id) {
   try {

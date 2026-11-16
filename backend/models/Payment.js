@@ -9,6 +9,19 @@ const PaymentSchema = new mongoose.Schema({
   method: { type: String, required: true, trim: true },
   transactionId: { type: String, trim: true },
   status: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' },
+  rentReminderSentAt: { type: Date },
+  rentReminderError: { type: String },
+  rentReminderWhatsAppSentAt: { type: Date },
+  confirmationEmailStatus: {
+    type: String,
+    enum: ['not_sent', 'sending', 'sent', 'failed', 'not_configured'],
+    default: 'not_sent',
+  },
+  confirmationEmailSendingAt: { type: Date },
+  confirmationEmailSentAt: { type: Date },
+  confirmationEmailMessageId: { type: String },
+  confirmationEmailError: { type: String },
+  confirmationEmailAttempts: { type: Number, default: 0 },
   notes: { type: String },
 }, { timestamps: true });
 

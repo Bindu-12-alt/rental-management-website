@@ -2,6 +2,7 @@ const Tenant = require('../models/Tenant');
 const Apartment = require('../models/Apartment');
 const History = require('../models/History');
 const { sendEmail, templates } = require('../services/emailService');
+const { sendTenantWelcomeEmail } = require('../services/registrationNotificationService');
 
 async function getTenants(req, res, next) {
   try {
@@ -234,16 +235,46 @@ async function emailTenant(req, res, next) {
         message: message.trim(),
       }),
     });
-    if (!result.success && !result.devMode) {
+    if (!result.success) {
       const err = new Error(result.error || 'Email could not be sent');
-      err.statusCode = 502;
+      err.statusCode = result.notConfigured ? 503 : 502;
       return next(err);
     }
 
-    res.json({ success: true, data: { email: tenant.email, devMode: Boolean(result.devMode) } });
+    res.json({
+      success: true,
+      data: { email: tenant.email, messageId: result.messageId },
+      message: 'Email accepted by the SMTP server.',
+    });
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { getTenants, getTenantById, createTenant, updateTenant, emailTenant };
+async function retryWelcomeEmail(req, res, next) {
+  try {
+    const tenant = await Tenant.findById(req.params.id).select('_id');
+    if (!tenant) {
+      const error = new Error('Tenant not found');
+      error.statusCode = 404;
+      return next(error);
+    }
+    const emailDelivery = await sendTenantWelcomeEmail(tenant._id);
+    const statusCode = emailDelivery.status === 'failed' ? 502 : emailDelivery.status === 'not_configured' ? 503 : 200;
+    const message = emailDelivery.status === 'sent'
+      ? emailDelivery.duplicatePrevented
+        ? 'Welcome email was already accepted by SMTP; no duplicate was sent.'
+        : 'Welcome email accepted by SMTP.'
+      : emailDelivery.error || 'Welcome email was not sent.';
+    res.status(statusCode).json({
+      success: emailDelivery.status === 'sent',
+      emailDelivery,
+      message,
+      ...(emailDelivery.status === 'sent' ? {} : { error: message }),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getTenants, getTenantById, createTenant, updateTenant, emailTenant, retryWelcomeEmail };

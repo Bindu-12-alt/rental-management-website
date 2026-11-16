@@ -1,9 +1,9 @@
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 const Tenant = require('../models/Tenant');
-const { sendEmail, templates } = require('../services/emailService');
 const { generateAdminToken, generateTenantToken } = require('../utils/authTokens');
 const { getAllowedAdminEmail } = require('../utils/adminEmail');
+const { notifyTenantRegistration } = require('../services/registrationNotificationService');
 
 async function loginAdmin(req, res, next) {
   try {
@@ -104,7 +104,7 @@ async function registerTenant(req, res, next) {
 
     const hashed = await bcrypt.hash(password, 10);
     let tenant;
-    const isNewAccount = !existing;
+    const isNewAccount = !existing || !existing.password;
 
     if (existing) {
       // Admin-created tenant self-registering — merge accounts
@@ -127,19 +127,25 @@ async function registerTenant(req, res, next) {
 
     const token = generateTenantToken(tenant._id);
 
-    // Send welcome email (non-blocking)
+    let registrationNotifications = null;
     if (isNewAccount) {
       try {
-        const emailData = templates.welcomeEmail({ fullName, email: tenant.email });
-        await sendEmail({ to: tenant.email, ...emailData });
+        registrationNotifications = await notifyTenantRegistration(tenant);
       } catch (emailErr) {
-        console.error('[Auth] Welcome email failed:', emailErr.message);
+        console.error('[Auth] Registration notifications failed:', emailErr.message);
+        registrationNotifications = {
+          welcomeEmail: { status: 'failed', error: emailErr.message },
+          adminNotification: { status: 'failed', error: emailErr.message },
+          adminEmail: { status: 'failed', error: emailErr.message },
+        };
       }
     }
 
     res.status(201).json({
       success: true,
       token,
+      emailDelivery: registrationNotifications?.welcomeEmail || { status: 'not_sent' },
+      notifications: registrationNotifications,
       tenant: { id: tenant._id, fullName: tenant.fullName, email: tenant.email },
     });
   } catch (error) {

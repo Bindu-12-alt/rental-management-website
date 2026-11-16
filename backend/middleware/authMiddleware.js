@@ -12,6 +12,11 @@ async function protect(req, res, next) {
     }
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      const err = new Error('Not authorized as admin');
+      err.statusCode = 401;
+      return next(err);
+    }
     const admin = await Admin.findById(decoded.id).select('-password');
     if (!admin) {
       const err = new Error('Not authorized, invalid token');

@@ -15,6 +15,7 @@
         <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
         <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
         <a class="active" href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-documents.html"><i class="fa-solid fa-file-arrow-up"></i> My Documents</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
         <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Request</a>
@@ -38,20 +39,37 @@
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
+    function escapeAgreementText(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[character]));
+    }
     tenantRequest('/tenant-portal/agreements').then(res => {
       window.rentEaseAgreementDocuments.replace(res.data);
       document.getElementById('agreementsBody').innerHTML = res.data.map(a => `
         <tr>
-          <td>${a.agreementId}</td>
-          <td>${a.apartment?.apartmentNumber || '—'}</td>
-          <td>${a.startDate.split('T')[0]}</td>
-          <td>${a.expiryDate.split('T')[0]}</td>
-          <td>₹${a.monthlyRent.toFixed(2)}</td>
-          <td>${a.rentalCycle}</td>
-          <td><span class="status-badge ${a.status.replace(' ','-').toLowerCase()}">${a.status}</span></td>
-          <td><button class="button small outline" onclick="window.rentEaseAgreementDocuments.open('${a._id}')">Print / PDF</button></td>
+          <td>${escapeAgreementText(a.agreementId)}</td>
+          <td>${escapeAgreementText(a.apartment?.apartmentNumber || '—')}</td>
+          <td>${escapeAgreementText(a.startDate.split('T')[0])}</td>
+          <td>${escapeAgreementText(a.expiryDate.split('T')[0])}</td>
+          <td>₹${Number(a.monthlyRent).toFixed(2)}</td>
+          <td>${escapeAgreementText(a.rentalCycle)}</td>
+          <td><span class="status-badge">${escapeAgreementText(a.status)}</span></td>
+          <td><button class="button small outline" onclick="downloadTenantAgreement('${escapeAgreementText(a._id)}','${escapeAgreementText(a.agreementId)}')">Download PDF</button></td>
         </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted)">No agreements found.</td></tr>';
-    }).catch(console.error);
+    }).catch(error => {
+      console.error(error);
+      document.getElementById('agreementsBody').innerHTML = `<tr><td colspan="8">${escapeAgreementText(error.message)}</td></tr>`;
+    });
+    window.downloadTenantAgreement = async function (id, agreementId) {
+      try {
+        await window.rentEaseAgreementDocuments.download(
+          `${TENANT_API_BASE}/tenant-portal/agreements/${encodeURIComponent(id)}/document`,
+          'tenant_token',
+          `${agreementId}.pdf`,
+        );
+      } catch (error) { window.alert(error.message); }
+    };
   </script>
 </body>
 </html>

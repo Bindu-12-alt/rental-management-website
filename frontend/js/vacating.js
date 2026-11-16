@@ -21,6 +21,8 @@ function setupVacatingPage() {
   if (searchInput) searchInput.addEventListener('input', loadVacatingRequests);
   const statusFilter = document.getElementById('statusFilter');
   if (statusFilter) statusFilter.addEventListener('change', loadVacatingRequests);
+  populateSelect('vacTenant', '/tenants', '_id', (tenant) => `${tenant.fullName} (${tenant.email})`, 'Select Tenant');
+  populateSelect('vacApartment', '/apartments', '_id', (apartment) => `${apartment.apartmentNumber} — ${apartment.buildingDetails}`, 'Select Apartment');
 }
 
 let editingVacatingId = null;
@@ -81,40 +83,66 @@ async function loadVacatingRequests() {
     if (status) query.append('status', status);
     const response = await apiRequest(`/vacating?${query.toString()}`);
     const body = document.getElementById('vacatingTableBody');
-    body.innerHTML = response.data.map((request) => `
-      <tr>
-        <td>${request.tenant?.fullName || '—'}</td>
-        <td>${request.apartment?.apartmentNumber || '—'}</td>
-        <td>${request.requestDate.split('T')[0]}</td>
-        <td>${request.expectedVacatingDate.split('T')[0]}</td>
-        <td>${request.noticePeriodDays}</td>
-        <td><span class="status-badge ${request.status.toLowerCase()}">${request.status}</span></td>
+    body.innerHTML = response.data.map((request) => {
+      const emailStatus = request.decisionEmailStatus || 'not_sent';
+      const emailSendingAt = new Date(request.decisionEmailSendingAt).getTime();
+      const staleEmailSend = emailStatus === 'sending'
+        && (!Number.isFinite(emailSendingAt) || Date.now() - emailSendingAt > 10 * 60 * 1000);
+      const retryEmail = ['Approved', 'Rejected'].includes(request.status)
+        && emailStatus !== 'sent' && (emailStatus !== 'sending' || staleEmailSend)
+        ? `<button class="button small outline" onclick="retryVacatingEmail('${request._id}')">Retry email</button>`
+        : '';
+      return `<tr>
+        <td>${escapeVacatingText(request.tenant?.fullName || '—')}</td>
+        <td>${escapeVacatingText(request.apartment?.apartmentNumber || '—')}</td>
+        <td>${escapeVacatingText(request.requestDate.split('T')[0])}</td>
+        <td>${escapeVacatingText(request.expectedVacatingDate.split('T')[0])}</td>
+        <td>${Number(request.noticePeriodDays)}</td>
+        <td><span class="status-badge">${escapeVacatingText(request.status)}</span></td>
+        <td title="${escapeVacatingText(request.decisionEmailError || '')}">${escapeVacatingText(emailStatus)}</td>
         <td>
-          <button class="button small" onclick="editVacating('${request._id}')">Edit</button>
-          ${request.status === 'Pending' ? `<button class="button small" style="background:#16A34A" onclick="approveVacating('${request._id}')">Approve</button> <button class="button small" style="background:#DC2626" onclick="rejectVacating('${request._id}')">Reject</button>` : ''}
-          ${request.status === 'Approved' ? `<button class="button small" style="background:#7B3F00" onclick="completeVacating('${request._id}')">Complete</button>` : ''}
+          <button class="button small" onclick="editVacating('${escapeVacatingText(request._id)}')">Edit</button>
+          ${request.status === 'Pending' ? `<button class="button small" style="background:#16A34A" onclick="approveVacating('${escapeVacatingText(request._id)}')">Approve</button> <button class="button small" style="background:#DC2626" onclick="rejectVacating('${escapeVacatingText(request._id)}')">Reject</button>` : ''}
+          ${request.status === 'Approved' ? `<button class="button small" style="background:#7B3F00" onclick="completeVacating('${escapeVacatingText(request._id)}')">Complete</button>` : ''}
+          ${retryEmail}
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   } catch (error) {
     console.error(error);
   }
 }
 
+function escapeVacatingText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
+}
+
 window.approveVacating = async function (id) {
   if (!confirm('Approve this vacating request?')) return;
   try {
-    await apiRequest(`/vacating/${id}/approve`, 'PUT');
-    loadVacatingRequests();
+    const result = await apiRequest(`/vacating/${id}/approve`, 'PUT');
+    if (result.emailDelivery?.status !== 'sent') window.alert(`Request approved. Tenant email status: ${result.emailDelivery?.status || 'unknown'}.`);
+    await loadVacatingRequests();
   } catch (error) { alert(error.message); }
 };
 
 window.rejectVacating = async function (id) {
   const comments = prompt('Reason for rejection (optional):') || '';
   try {
-    await apiRequest(`/vacating/${id}/reject`, 'PUT', { adminComments: comments });
-    loadVacatingRequests();
+    const result = await apiRequest(`/vacating/${id}/reject`, 'PUT', { adminComments: comments });
+    if (result.emailDelivery?.status !== 'sent') window.alert(`Request rejected. Tenant email status: ${result.emailDelivery?.status || 'unknown'}.`);
+    await loadVacatingRequests();
   } catch (error) { alert(error.message); }
+};
+
+window.retryVacatingEmail = async function (id) {
+  try {
+    const result = await apiRequest(`/vacating/${encodeURIComponent(id)}/email`, 'POST');
+    window.alert(result.message);
+    await loadVacatingRequests();
+  } catch (error) { window.alert(error.message); }
 };
 
 window.completeVacating = async function (id) {

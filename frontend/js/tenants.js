@@ -20,17 +20,26 @@ async function loadTenants() {
     const response = await apiRequest(`/tenants?${query.toString()}`);
     const tbody = document.getElementById('tenantsTableBody');
     tbody.innerHTML = response.data.map((tenant) => {
+      const emailStatus = tenant.welcomeEmailStatus || 'not_sent';
+      const sendingAt = new Date(tenant.welcomeEmailSendingAt).getTime();
+      const staleSending = emailStatus === 'sending'
+        && (!Number.isFinite(sendingAt) || Date.now() - sendingAt > 10 * 60 * 1000);
+      const retryWelcome = ['failed', 'not_configured'].includes(emailStatus) || staleSending
+        ? `<button class="button small outline" onclick="retryWelcomeEmail('${escapeTenantText(tenant._id)}')">Retry welcome</button>`
+        : '';
       return `
         <tr>
-          <td>${tenant.fullName}</td>
-          <td>${tenant.email}</td>
-          <td>${tenant.phone}</td>
-          <td>${tenant.address}</td>
-          <td>${tenant.apartment?.apartmentNumber || '—'}</td>
-          <td>${tenant.status}</td>
+          <td>${escapeTenantText(tenant.fullName)}</td>
+          <td>${escapeTenantText(tenant.email)}</td>
+          <td>${escapeTenantText(tenant.phone)}</td>
+          <td>${escapeTenantText(tenant.address)}</td>
+          <td>${escapeTenantText(tenant.apartment?.apartmentNumber || '—')}</td>
+          <td>${escapeTenantText(tenant.status)}</td>
+          <td title="${escapeTenantText(tenant.welcomeEmailError || '')}">${escapeTenantText(emailStatus)}${tenant.welcomeEmailSentAt ? `<br><small>${escapeTenantText(new Date(tenant.welcomeEmailSentAt).toLocaleString())}</small>` : ''}</td>
           <td>
-            <button class="button small" onclick="editTenant('${tenant._id}')">Edit</button>
-            <button class="button small outline" onclick="emailTenant('${tenant._id}')">Email</button>
+            <button class="button small" onclick="editTenant('${escapeTenantText(tenant._id)}')">Edit</button>
+            <button class="button small outline" onclick="emailTenant('${escapeTenantText(tenant._id)}')">Email</button>
+            ${retryWelcome}
           </td>
         </tr>
       `;
@@ -38,6 +47,12 @@ async function loadTenants() {
   } catch (error) {
     console.error(error);
   }
+}
+
+function escapeTenantText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
 }
 
 function initializeTenantForm() {
@@ -135,8 +150,19 @@ window.emailTenant = async function (id) {
   if (!message || !message.trim()) return;
   try {
     const result = await apiRequest(`/tenants/${id}/email`, 'POST', { subject: subject.trim(), message: message.trim() });
-    alert(result.data.devMode ? 'Email logged in development mode; no email was delivered.' : 'Email sent to tenant.');
+    alert(result.message || 'Email accepted by the SMTP server.');
   } catch (error) {
     alert(error.message);
+  }
+};
+
+window.retryWelcomeEmail = async function (id) {
+  try {
+    const result = await apiRequest(`/tenants/${encodeURIComponent(id)}/welcome-email`, 'POST');
+    window.alert(result.message);
+    await loadTenants();
+  } catch (error) {
+    await loadTenants();
+    window.alert(error.message);
   }
 };

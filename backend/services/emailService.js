@@ -1,10 +1,10 @@
 /**
  * RentEase Email Service
- * Uses Nodemailer with SMTP. Set EMAIL_DEV_MODE=true to log emails instead of sending.
+ * Uses Nodemailer with SMTP. EMAIL_DEV_MODE=true disables delivery.
  */
 const nodemailer = require('nodemailer');
 
-const DEV_MODE = process.env.EMAIL_DEV_MODE === 'true' || !process.env.EMAIL_USER;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -18,19 +18,77 @@ function escapeHtml(value) {
 
 let transporter;
 
+function getEmailConfiguration() {
+  const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || '';
+  const devMode = process.env.EMAIL_DEV_MODE === 'true';
+  const port = Number.parseInt(process.env.EMAIL_PORT || '587', 10);
+  const configured = !devMode
+    && Boolean(process.env.EMAIL_HOST && process.env.EMAIL_HOST.trim())
+    && Boolean(process.env.EMAIL_USER)
+    && Boolean(process.env.EMAIL_PASS)
+    && Number.isInteger(port) && port > 0 && port <= 65535
+    && EMAIL_REGEX.test(fromAddress);
+  return {
+    configured,
+    devMode,
+    host: process.env.EMAIL_HOST || '',
+    port,
+    secure: process.env.EMAIL_SECURE === 'true',
+    fromAddress,
+  };
+}
+
 function getTransporter() {
   if (transporter) return transporter;
-  if (DEV_MODE) return null;
+  const configuration = getEmailConfiguration();
+  if (!configuration.configured) return null;
   transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT || '587', 10),
-    secure: process.env.EMAIL_SECURE === 'true',
+    host: configuration.host,
+    port: configuration.port,
+    secure: configuration.secure,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
   });
   return transporter;
+}
+
+async function verifyEmailConnection() {
+  const configuration = getEmailConfiguration();
+  if (!configuration.configured) {
+    console.warn('[EmailService] Email not sent:', configuration.devMode
+      ? 'delivery is disabled in development mode'
+      : 'SMTP credentials or sender configuration are missing');
+    return {
+      configured: false,
+      devMode: configuration.devMode,
+      verified: false,
+      fromAddress: configuration.fromAddress || null,
+      error: configuration.devMode
+        ? 'Email delivery is disabled in development mode'
+        : 'SMTP host, credentials, and a valid sender address are required',
+    };
+  }
+  try {
+    await getTransporter().verify();
+    return {
+      configured: true,
+      devMode: false,
+      verified: true,
+      host: configuration.host,
+      fromAddress: configuration.fromAddress,
+    };
+  } catch (error) {
+    return {
+      configured: true,
+      devMode: false,
+      verified: false,
+      host: configuration.host,
+      fromAddress: configuration.fromAddress,
+      error: error.message,
+    };
+  }
 }
 
 /**
@@ -41,38 +99,50 @@ function getTransporter() {
  * @param {string} options.html     - HTML body
  * @param {string} [options.text]   - Plain text fallback
  */
-async function sendEmail({ to, subject, html, text }) {
-  if (!to || !subject || !html) {
-    console.warn('[EmailService] Missing required fields (to, subject, html) — skipping');
-    return { skipped: true };
+async function sendEmail({ to, subject, html, text, attachments = [] }) {
+  if (typeof to !== 'string' || !EMAIL_REGEX.test(to.trim())
+    || typeof subject !== 'string' || !subject.trim() || subject.length > 200 || /[\r\n]/.test(subject)
+    || !html) {
+    return { success: false, error: 'A valid recipient, subject, and HTML body are required' };
   }
 
-  const fromAddress = `${process.env.EMAIL_FROM_NAME || 'RentEase'} <${process.env.EMAIL_FROM_ADDRESS || 'no-reply@rentease.com'}>`;
-
-  if (DEV_MODE) {
-    console.log('─────────────────────────────────────');
-    console.log('[EmailService DEV] Would send email:');
-    console.log(`  From:    ${fromAddress}`);
-    console.log(`  To:      ${to}`);
-    console.log(`  Subject: ${subject}`);
-    console.log('─────────────────────────────────────');
-    return { devMode: true, to, subject };
+  const configuration = getEmailConfiguration();
+  if (!configuration.configured) {
+    console.warn('[EmailService] Email not sent:', configuration.devMode
+      ? 'delivery is disabled in development mode'
+      : 'SMTP credentials or sender configuration are missing');
+    return {
+      success: false,
+      notConfigured: true,
+      devMode: configuration.devMode,
+      error: configuration.devMode
+        ? 'Email delivery is disabled in development mode'
+        : 'SMTP host, credentials, and a valid sender address are required',
+    };
   }
 
   try {
     const t = getTransporter();
+    const fromName = String(process.env.EMAIL_FROM_NAME || 'RentEase')
+      .replace(/[\r\n"]/g, ' ')
+      .slice(0, 80);
     const info = await t.sendMail({
-      from: fromAddress,
-      to,
+      from: `"${fromName}" <${configuration.fromAddress}>`,
+      to: to.trim(),
       subject,
       html,
       text: text || html.replace(/<[^>]+>/g, ''),
+      attachments,
     });
+    const accepted = Array.isArray(info.accepted)
+      && info.accepted.some((address) => String(address).toLowerCase() === to.trim().toLowerCase());
+    if (!accepted) {
+      return { success: false, error: 'SMTP server did not accept the recipient address' };
+    }
     console.log(`[EmailService] Sent to ${to}: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error(`[EmailService] Failed to send to ${to}:`, error.message);
-    // Don't throw — email failures should not crash the main flow
     return { success: false, error: error.message };
   }
 }
@@ -126,14 +196,14 @@ function baseTemplate(content) {
 
 function welcomeEmail({ fullName, email }) {
   return {
-    subject: 'Welcome to RentEase!',
+    subject: 'Your RentEase registration is confirmed',
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
-      <p>Welcome to <strong>RentEase</strong>! Your tenant account has been created successfully.</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
+      <p>Your tenant registration is confirmed. Welcome to <strong>RentEase</strong>!</p>
       <div class="info-box">
         <p class="label">Account Details</p>
-        <p><strong>Name:</strong> ${fullName}</p>
-        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
       </div>
       <p>You can now log in to the tenant portal to view your apartment details, payments, maintenance requests, and more.</p>
       <p>If you did not create this account, please contact your property manager immediately.</p>
@@ -141,17 +211,31 @@ function welcomeEmail({ fullName, email }) {
   };
 }
 
+function newTenantRegistrationEmail({ fullName, email }) {
+  return {
+    subject: 'New tenant registration — RentEase',
+    html: baseTemplate(`
+      <p>A tenant has registered with RentEase.</p>
+      <div class="info-box">
+        <p><strong>Name:</strong> ${escapeHtml(fullName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+      </div>
+      <p>Review the tenant account and apartment assignment in the admin portal.</p>
+    `),
+  };
+}
+
 function paymentReminderEmail({ fullName, amount, dueDate, apartmentNumber }) {
   return {
-    subject: `Rent Due Reminder — ₹${amount} due on ${dueDate}`,
+    subject: `Rent Due Reminder — INR ${amount} due on ${dueDate}`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>This is a friendly reminder that your rent payment is due soon.</p>
       <div class="info-box">
         <p class="label">Payment Details</p>
-        <p><strong>Apartment:</strong> ${apartmentNumber}</p>
-        <p><strong>Amount Due:</strong> ₹${amount}</p>
-        <p><strong>Due Date:</strong> ${dueDate}</p>
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Amount Due:</strong> INR ${escapeHtml(amount)}</p>
+        <p><strong>Due Date:</strong> ${escapeHtml(dueDate)}</p>
       </div>
       <p>Please make your payment on time to avoid any late fees.</p>
       <p>Log in to the RentEase tenant portal to view your payment details.</p>
@@ -161,16 +245,16 @@ function paymentReminderEmail({ fullName, amount, dueDate, apartmentNumber }) {
 
 function paymentConfirmationEmail({ fullName, amount, paymentDate, transactionId, apartmentNumber }) {
   return {
-    subject: `Payment Confirmed — ₹${amount} received`,
+    subject: `Payment Confirmed — INR ${amount} received`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>Your rent payment has been received and recorded.</p>
       <div class="info-box">
         <p class="label">Payment Confirmation</p>
-        <p><strong>Apartment:</strong> ${apartmentNumber}</p>
-        <p><strong>Amount:</strong> ₹${amount}</p>
-        <p><strong>Date:</strong> ${paymentDate}</p>
-        ${transactionId ? `<p><strong>Transaction ID:</strong> ${transactionId}</p>` : ''}
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Amount:</strong> INR ${escapeHtml(amount)}</p>
+        <p><strong>Date:</strong> ${escapeHtml(paymentDate)}</p>
+        ${transactionId ? `<p><strong>Transaction ID:</strong> ${escapeHtml(transactionId)}</p>` : ''}
         <p><strong>Status:</strong> <span class="status-badge badge-green">Paid</span></p>
       </div>
       <p>Thank you for your timely payment. Keep this confirmation for your records.</p>
@@ -181,15 +265,15 @@ function paymentConfirmationEmail({ fullName, amount, paymentDate, transactionId
 function maintenanceSubmittedEmail({ fullName, title, requestId, priority }) {
   const priorityBadge = priority === 'High' ? 'badge-red' : priority === 'Medium' ? 'badge-yellow' : 'badge-brown';
   return {
-    subject: `Maintenance Request Received — ${title}`,
+    subject: `Maintenance Request Received — ${String(title).replace(/[\r\n]/g, ' ').slice(0, 100)}`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>We have received your maintenance request and it is now being reviewed.</p>
       <div class="info-box">
         <p class="label">Request Details</p>
-        <p><strong>Title:</strong> ${title}</p>
-        <p><strong>Request ID:</strong> ${requestId}</p>
-        <p><strong>Priority:</strong> <span class="status-badge ${priorityBadge}">${priority}</span></p>
+        <p><strong>Title:</strong> ${escapeHtml(title)}</p>
+        <p><strong>Request ID:</strong> ${escapeHtml(requestId)}</p>
+        <p><strong>Priority:</strong> <span class="status-badge ${priorityBadge}">${escapeHtml(priority)}</span></p>
         <p><strong>Status:</strong> <span class="status-badge badge-yellow">Pending</span></p>
       </div>
       <p>Our team will review your request and get back to you shortly. You can track the status in your tenant portal.</p>
@@ -200,15 +284,15 @@ function maintenanceSubmittedEmail({ fullName, title, requestId, priority }) {
 function maintenanceUpdatedEmail({ fullName, title, status, adminComments }) {
   const statusBadge = status === 'Completed' ? 'badge-green' : status === 'In Progress' ? 'badge-yellow' : status === 'Rejected' ? 'badge-red' : 'badge-brown';
   return {
-    subject: `Maintenance Update — ${title}`,
+    subject: `Maintenance Update — ${String(title).replace(/[\r\n]/g, ' ').slice(0, 100)}`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>Your maintenance request has been updated.</p>
       <div class="info-box">
         <p class="label">Update Details</p>
-        <p><strong>Request:</strong> ${title}</p>
-        <p><strong>New Status:</strong> <span class="status-badge ${statusBadge}">${status}</span></p>
-        ${adminComments ? `<p><strong>Admin Notes:</strong> ${adminComments}</p>` : ''}
+        <p><strong>Request:</strong> ${escapeHtml(title)}</p>
+        <p><strong>New Status:</strong> <span class="status-badge ${statusBadge}">${escapeHtml(status)}</span></p>
+        ${adminComments ? `<p><strong>Admin Notes:</strong> ${escapeHtml(adminComments)}</p>` : ''}
       </div>
       <p>Log in to the RentEase tenant portal for full details.</p>
     `),
@@ -227,20 +311,20 @@ function agreementCreatedEmail({
 }) {
   const eventLabel = { created: 'Created', updated: 'Updated', renewed: 'Renewed' }[event] || 'Updated';
   return {
-    subject: `Rental Agreement ${eventLabel} — ${agreementId}`,
+    subject: `Rental Agreement ${eventLabel} — ${String(agreementId).replace(/[\r\n]/g, ' ').slice(0, 80)}`,
     html: baseTemplate(`
       <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
-      <p>A rental agreement has been ${event} for your apartment.</p>
+      <p>A rental agreement has been ${escapeHtml(event)} for your apartment.</p>
       <div class="info-box">
         <p class="label">Agreement Details</p>
         <p><strong>Agreement ID:</strong> ${escapeHtml(agreementId)}</p>
         <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
         <p><strong>Start Date:</strong> ${escapeHtml(startDate)}</p>
         <p><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}</p>
-        <p><strong>Monthly Rent:</strong> ₹${escapeHtml(monthlyRent)}</p>
+        <p><strong>Monthly Rent:</strong> INR ${escapeHtml(monthlyRent)}</p>
         <p><strong>Status:</strong> ${escapeHtml(status)}</p>
       </div>
-      <p>Please review the agreement details in your tenant portal.</p>
+      <p>The rental agreement PDF is attached. Please review and keep it for your records.</p>
     `),
   };
 }
@@ -249,15 +333,30 @@ function agreementRenewalReminderEmail({ fullName, agreementId, expiryDate, apar
   return {
     subject: `Rental Agreement Expiring Soon — ${agreementId}`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>Your rental agreement is expiring soon. Please contact your property manager to discuss renewal options.</p>
       <div class="info-box">
         <p class="label">Agreement Details</p>
-        <p><strong>Agreement ID:</strong> ${agreementId}</p>
-        <p><strong>Apartment:</strong> ${apartmentNumber}</p>
-        <p><strong>Expiry Date:</strong> <strong style="color:#DC2626">${expiryDate}</strong></p>
+        <p><strong>Agreement ID:</strong> ${escapeHtml(agreementId)}</p>
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Expiry Date:</strong> <strong style="color:#DC2626">${escapeHtml(expiryDate)}</strong></p>
       </div>
       <p>Contact your property manager before the expiry date to ensure a smooth renewal process.</p>
+    `),
+  };
+}
+
+function agreementExpiredEmail({ fullName, agreementId, expiryDate, apartmentNumber }) {
+  return {
+    subject: `Rental Agreement Expired — ${String(agreementId).replace(/[\r\n]/g, ' ').slice(0, 80)}`,
+    html: baseTemplate(`
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
+      <p>Your rental agreement has expired. Please contact your property manager to confirm renewal or move-out arrangements.</p>
+      <div class="info-box">
+        <p><strong>Agreement ID:</strong> ${escapeHtml(agreementId)}</p>
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Expiry Date:</strong> ${escapeHtml(expiryDate)}</p>
+      </div>
     `),
   };
 }
@@ -294,31 +393,67 @@ function vacatingRequestEmail({ fullName, expectedVacatingDate, status, adminCom
   return {
     subject: `Vacating Request ${status} — RentEase`,
     html: baseTemplate(`
-      <p>Hi <strong>${fullName}</strong>,</p>
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
       <p>Your vacating request has been updated.</p>
       <div class="info-box">
         <p class="label">Request Details</p>
-        <p><strong>Expected Vacating Date:</strong> ${expectedVacatingDate}</p>
-        <p><strong>Status:</strong> <span class="status-badge ${statusBadge}">${status}</span></p>
-        ${adminComments ? `<p><strong>Notes:</strong> ${adminComments}</p>` : ''}
+        <p><strong>Expected Vacating Date:</strong> ${escapeHtml(expectedVacatingDate)}</p>
+        <p><strong>Status:</strong> <span class="status-badge ${statusBadge}">${escapeHtml(status)}</span></p>
+        ${adminComments ? `<p><strong>Notes:</strong> ${escapeHtml(adminComments)}</p>` : ''}
       </div>
       <p>Log in to your RentEase tenant portal for full details and next steps.</p>
     `),
   };
 }
 
+function vacatingAdminEmail({ fullName, email, apartmentNumber, expectedVacatingDate, status }) {
+  return {
+    subject: `New vacating request — ${String(apartmentNumber).replace(/[\r\n]/g, ' ').slice(0, 80)}`,
+    html: baseTemplate(`
+      <p>A tenant submitted a vacating request.</p>
+      <div class="info-box">
+        <p><strong>Tenant:</strong> ${escapeHtml(fullName)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(email)}</p>
+        <p><strong>Apartment:</strong> ${escapeHtml(apartmentNumber)}</p>
+        <p><strong>Requested date:</strong> ${escapeHtml(expectedVacatingDate)}</p>
+        <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+      </div>
+      <p>Review this request in the RentEase admin portal.</p>
+    `),
+  };
+}
+
+function tenantDocumentDecisionEmail({ fullName, documentType, status, reviewComment }) {
+  const approved = status === 'Approved';
+  return {
+    subject: `RentEase document ${approved ? 'approved' : 'rejected'}`,
+    html: baseTemplate(`
+      <p>Hi <strong>${escapeHtml(fullName)}</strong>,</p>
+      <p>Your uploaded <strong>${escapeHtml(documentType)}</strong> document was ${approved ? 'approved' : 'rejected'} by the RentEase property manager.</p>
+      ${reviewComment ? `<div class="info-box"><p><strong>Review notes:</strong></p><p style="white-space:pre-wrap">${escapeHtml(reviewComment)}</p></div>` : ''}
+      <p>You can review your document status in the RentEase tenant portal.</p>
+    `),
+  };
+}
+
 module.exports = {
   sendEmail,
+  getEmailConfiguration,
+  verifyEmailConnection,
   templates: {
     welcomeEmail,
+    newTenantRegistrationEmail,
     paymentReminderEmail,
     paymentConfirmationEmail,
     maintenanceSubmittedEmail,
     maintenanceUpdatedEmail,
     agreementCreatedEmail,
     agreementRenewalReminderEmail,
+    agreementExpiredEmail,
     tenantContactEmail,
     directMessageEmail,
     vacatingRequestEmail,
+    vacatingAdminEmail,
+    tenantDocumentDecisionEmail,
   },
 };

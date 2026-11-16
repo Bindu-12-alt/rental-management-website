@@ -6,6 +6,84 @@ const { createNotification } = require('../services/notificationService');
 const { sendEmail, templates } = require('../services/emailService');
 const { sendWhatsApp, templates: waTemplates } = require('../services/whatsappService');
 
+function isNonNegativeAmount(value) {
+  return (typeof value === 'number' || (typeof value === 'string' && value.trim() !== ''))
+    && Number.isFinite(Number(value)) && Number(value) >= 0;
+}
+
+async function sendPaymentConfirmationEmail(paymentId) {
+  const now = new Date();
+  const payment = await Payment.findOneAndUpdate({
+    _id: paymentId,
+    status: 'Paid',
+    $or: [
+      { confirmationEmailStatus: { $nin: ['sending', 'sent'] } },
+      { confirmationEmailStatus: 'sending', confirmationEmailSendingAt: { $lt: new Date(now.getTime() - 10 * 60 * 1000) } },
+      { confirmationEmailStatus: 'sending', confirmationEmailSendingAt: null },
+    ],
+  }, {
+    $set: { confirmationEmailStatus: 'sending', confirmationEmailSendingAt: now, confirmationEmailError: null },
+    $inc: { confirmationEmailAttempts: 1 },
+  }, { new: true });
+
+  if (!payment) {
+    const current = await Payment.findById(paymentId).select('confirmationEmailStatus confirmationEmailSentAt confirmationEmailError');
+    return current
+      ? { status: current.confirmationEmailStatus, sentAt: current.confirmationEmailSentAt, error: current.confirmationEmailError }
+      : { status: 'not_found' };
+  }
+
+  try {
+    const tenant = await Tenant.findById(payment.tenant).select('fullName email phone');
+    const apartment = await Apartment.findById(payment.apartment).select('apartmentNumber');
+    if (!tenant || !tenant.email) throw new Error('Payment tenant has no deliverable email address');
+
+    const result = await sendEmail({
+      to: tenant.email,
+      ...templates.paymentConfirmationEmail({
+        fullName: tenant.fullName,
+        amount: payment.amount,
+        paymentDate: payment.paymentDate.toLocaleDateString(),
+        transactionId: payment.transactionId,
+        apartmentNumber: apartment?.apartmentNumber || '—',
+      }),
+    });
+    payment.confirmationEmailStatus = result.success ? 'sent' : result.notConfigured ? 'not_configured' : 'failed';
+    payment.confirmationEmailSendingAt = null;
+    payment.confirmationEmailSentAt = result.success ? new Date() : undefined;
+    payment.confirmationEmailMessageId = result.success ? result.messageId : undefined;
+    payment.confirmationEmailError = result.success ? undefined : result.error;
+    await payment.save();
+
+    if (result.success) {
+      try {
+        await createNotification({
+          type: 'Payment Confirmation',
+          message: `Payment confirmation for INR ${payment.amount} was emailed to ${tenant.email}`,
+          relatedTenant: tenant._id,
+          relatedApartment: payment.apartment,
+          eventKey: `payment-confirmation-${payment._id}`,
+        });
+      } catch (notificationError) {
+        console.error('[Payment] Confirmation notification could not be recorded:', notificationError.message);
+      }
+    }
+    return {
+      status: payment.confirmationEmailStatus,
+      sentAt: payment.confirmationEmailSentAt,
+      error: payment.confirmationEmailError,
+      messageId: payment.confirmationEmailMessageId,
+    };
+  } catch (error) {
+    payment.confirmationEmailStatus = 'failed';
+    payment.confirmationEmailSendingAt = null;
+    payment.confirmationEmailError = error.message;
+    await payment.save();
+    console.error('[Payment] Confirmation email failed:', error.message);
+    return { status: 'failed', error: error.message };
+  }
+}
+
 async function getPayments(req, res, next) {
   try {
     const { search, status, tenant, apartment, startDate, endDate } = req.query;
@@ -44,8 +122,8 @@ async function createPayment(req, res, next) {
       err.statusCode = 400;
       return next(err);
     }
-    if (amount < 0) {
-      const err = new Error('Payment amount must be a positive number');
+    if (!isNonNegativeAmount(amount)) {
+      const err = new Error('Payment amount must be a valid non-negative number');
       err.statusCode = 400;
       return next(err);
     }
@@ -76,21 +154,13 @@ async function createPayment(req, res, next) {
       });
     }
 
-    // Send payment confirmation email + WhatsApp when payment is confirmed Paid
+    let emailDelivery = { status: 'not_sent' };
     if (paymentStatus === 'Paid') {
+      emailDelivery = await sendPaymentConfirmationEmail(payment._id);
       try {
         const tenantDoc = await Tenant.findById(tenant).select('fullName email phone');
         const aptDoc = await Apartment.findById(apartment).select('apartmentNumber');
         if (tenantDoc) {
-          const emailData = templates.paymentConfirmationEmail({
-            fullName: tenantDoc.fullName,
-            amount,
-            paymentDate: new Date(paymentDate).toLocaleDateString(),
-            transactionId,
-            apartmentNumber: aptDoc?.apartmentNumber || '—',
-          });
-          await sendEmail({ to: tenantDoc.email, ...emailData });
-
           if (tenantDoc.phone) {
             await sendWhatsApp(tenantDoc.phone, waTemplates.paymentConfirmed({
               fullName: tenantDoc.fullName,
@@ -105,7 +175,7 @@ async function createPayment(req, res, next) {
       }
     }
 
-    res.status(201).json({ success: true, data: payment });
+    res.status(201).json({ success: true, data: payment, emailDelivery });
   } catch (error) {
     next(error);
   }
@@ -137,8 +207,8 @@ async function updatePayment(req, res, next) {
     }
 
     const { amount, paymentDate, dueDate, method, transactionId, status, notes } = req.body;
-    if (amount != null && amount < 0) {
-      const err = new Error('Payment amount must be positive');
+    if (amount != null && !isNonNegativeAmount(amount)) {
+      const err = new Error('Payment amount must be a valid non-negative number');
       err.statusCode = 400;
       return next(err);
     }
@@ -172,20 +242,13 @@ async function updatePayment(req, res, next) {
       relatedPayment: payment._id,
     });
 
-    // Send confirmation if status changed to Paid
+    let emailDelivery = { status: 'not_sent' };
     if (payment.status === 'Paid' && oldStatus !== 'Paid') {
+      emailDelivery = await sendPaymentConfirmationEmail(payment._id);
       try {
         const tenantDoc = await Tenant.findById(payment.tenant).select('fullName email phone');
         const aptDoc = await Apartment.findById(payment.apartment).select('apartmentNumber');
         if (tenantDoc) {
-          const emailData = templates.paymentConfirmationEmail({
-            fullName: tenantDoc.fullName,
-            amount: payment.amount,
-            paymentDate: payment.paymentDate.toLocaleDateString(),
-            transactionId: payment.transactionId,
-            apartmentNumber: aptDoc?.apartmentNumber || '—',
-          });
-          await sendEmail({ to: tenantDoc.email, ...emailData });
           if (tenantDoc.phone) {
             await sendWhatsApp(tenantDoc.phone, waTemplates.paymentConfirmed({
               fullName: tenantDoc.fullName,
@@ -200,10 +263,40 @@ async function updatePayment(req, res, next) {
       }
     }
 
-    res.json({ success: true, data: payment });
+    res.json({ success: true, data: payment, emailDelivery });
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { getPayments, getPaymentById, createPayment, updatePayment };
+async function retryPaymentConfirmation(req, res, next) {
+  try {
+    const payment = await Payment.findById(req.params.id).select('status');
+    if (!payment) {
+      const error = new Error('Payment not found');
+      error.statusCode = 404;
+      return next(error);
+    }
+    if (payment.status !== 'Paid') {
+      const error = new Error('Only confirmed paid payments have a confirmation email');
+      error.statusCode = 400;
+      return next(error);
+    }
+    const emailDelivery = await sendPaymentConfirmationEmail(payment._id);
+    const statusCode = emailDelivery.status === 'failed' ? 502 : emailDelivery.status === 'not_configured' ? 503 : 200;
+    res.status(statusCode).json({
+      success: emailDelivery.status === 'sent',
+      emailDelivery,
+      message: emailDelivery.status === 'sent'
+        ? 'Payment confirmation email accepted by SMTP.'
+        : emailDelivery.error || 'Payment confirmation email was not sent.',
+      ...(emailDelivery.status === 'sent' ? {} : {
+        error: emailDelivery.error || 'Payment confirmation email was not sent.',
+      }),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { getPayments, getPaymentById, createPayment, updatePayment, retryPaymentConfirmation };

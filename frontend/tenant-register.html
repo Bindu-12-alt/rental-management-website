@@ -53,7 +53,7 @@
         </div>
 
         <p id="registerError" class="form-error hidden"></p>
-        <p id="registerSuccess" class="form-success hidden"><i class="fa-solid fa-circle-check"></i> Account created! Redirecting to dashboard…</p>
+        <p id="registerSuccess" class="form-success hidden"><i class="fa-solid fa-circle-check"></i> <span id="registerSuccessMessage"></span></p>
 
         <button type="submit" class="button primary" style="width:100%;justify-content:center;margin-top:0.5rem" id="submitBtn">
           <i class="fa-solid fa-user-plus"></i> Create Account
@@ -120,6 +120,10 @@
         if (!res.ok) throw new Error(data.error || 'Registration failed');
         localStorage.setItem('tenant_token', data.token);
         localStorage.setItem('tenant_info', JSON.stringify(data.tenant));
+        const welcomeEmail = data.emailDelivery || {};
+        document.getElementById('registerSuccessMessage').textContent = welcomeEmail.status === 'sent'
+          ? 'Account created. Welcome email accepted by the mail server. Redirecting…'
+          : `Account created, but the welcome email was not sent${welcomeEmail.error ? `: ${welcomeEmail.error}` : ''}. Redirecting…`;
         successEl.classList.remove('hidden');
         setTimeout(() => { window.location.href = 'pages/tenant-dashboard.html'; }, 1200);
       } catch (err) {

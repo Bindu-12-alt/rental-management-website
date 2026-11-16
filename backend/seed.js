@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const Admin = require('./models/Admin');
 const Apartment = require('./models/Apartment');
@@ -10,12 +11,23 @@ const SecurityDeposit = require('./models/SecurityDeposit');
 const VacatingRequest = require('./models/VacatingRequest');
 const Notification = require('./models/Notification');
 const MaintenanceRequest = require('./models/MaintenanceRequest');
+const TenantDocument = require('./models/TenantDocument');
 const History = require('./models/History');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 async function seed() {
-  await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  if (process.env.SEED_DEMO_DATA !== 'true') {
+    throw new Error('Demo seeding deletes existing application data. Set SEED_DEMO_DATA=true only for a disposable database.');
+  }
+  if (!process.env.MONGO_URI || !process.env.SEED_ADMIN_EMAIL || !process.env.SEED_ADMIN_PASSWORD) {
+    throw new Error('MONGO_URI, SEED_ADMIN_EMAIL, and SEED_ADMIN_PASSWORD are required for demo seeding.');
+  }
+  if (process.env.SEED_ADMIN_PASSWORD.length < 12) {
+    throw new Error('SEED_ADMIN_PASSWORD must contain at least 12 characters.');
+  }
+
+  await mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 });
 
   await Promise.all([
     Admin.deleteMany(),
@@ -27,11 +39,16 @@ async function seed() {
     VacatingRequest.deleteMany(),
     Notification.deleteMany(),
     MaintenanceRequest.deleteMany(),
+    TenantDocument.deleteMany(),
     History.deleteMany(),
   ]);
 
-  const adminPassword = await bcrypt.hash('SRI@12', 10);
-  const admin = await Admin.create({ name: 'RentEase Admin', email: 'bindusrikavuri@gmail.com', password: adminPassword });
+  const adminPassword = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD, 10);
+  const admin = await Admin.create({
+    name: process.env.SEED_ADMIN_NAME || 'RentEase Admin',
+    email: process.env.SEED_ADMIN_EMAIL.toLowerCase().trim(),
+    password: adminPassword,
+  });
 
   const apartments = await Apartment.create([
     { apartmentNumber: '101', buildingDetails: 'Blue Tower', floorDetails: 'Floor 1', apartmentType: 'Studio', monthlyRent: 1200, securityDeposit: 1200, status: 'Occupied' },
@@ -84,7 +101,7 @@ async function seed() {
   ]);
 
   const maintenanceRequests = await MaintenanceRequest.create([
-    { apartment: apartments[0]._id, tenant: tenants[0]._id, title: 'Leaky Faucet', description: 'Kitchen faucet drips constantly.', priority: 'High', requestDate: new Date('2025-03-15'), status: 'Completed', adminComments: 'Replaced faucet cartridge.', completedDate: new Date('2025-03-17') },
+    { apartment: apartments[0]._id, tenant: tenants[0]._id, title: 'Leaky Faucet', description: 'Kitchen faucet drips constantly.', priority: 'High', requestDate: new Date('2025-03-15'), status: 'Resolved', adminComments: 'Replaced faucet cartridge.', completedDate: new Date('2025-03-17') },
     { apartment: apartments[4]._id, tenant: tenants[2]._id, title: 'Heating not working', description: 'Heating turned off in living area.', priority: 'Medium', requestDate: new Date('2025-04-05'), status: 'Pending' },
   ]);
 

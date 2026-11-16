@@ -4,6 +4,7 @@ const Tenant = require('../models/Tenant');
 const { createNotification } = require('../services/notificationService');
 const { sendEmail, templates } = require('../services/emailService');
 const { sendWhatsApp, templates: waTemplates } = require('../services/whatsappService');
+const { resolveMaintenancePhoto, sendMaintenancePhoto } = require('../services/maintenancePhotoService');
 
 async function getRequests(req, res, next) {
   try {
@@ -114,6 +115,27 @@ async function getRequestById(req, res, next) {
   }
 }
 
+async function downloadMaintenancePhoto(req, res, next) {
+  try {
+    const photoIndex = Number(req.params.photoIndex);
+    if (!Number.isInteger(photoIndex) || photoIndex < 0) {
+      const err = new Error('Invalid photo index');
+      err.statusCode = 400;
+      return next(err);
+    }
+    const request = await MaintenanceRequest.findById(req.params.id).select('photos');
+    const filePath = request && resolveMaintenancePhoto(request.photos[photoIndex]);
+    if (!filePath) {
+      const err = new Error('Maintenance photo not found');
+      err.statusCode = 404;
+      return next(err);
+    }
+    sendMaintenancePhoto(res, filePath, next);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function updateRequest(req, res, next) {
   try {
     const request = await MaintenanceRequest.findById(req.params.id)
@@ -190,4 +212,10 @@ async function updateRequest(req, res, next) {
   }
 }
 
-module.exports = { getRequests, getRequestById, createRequest, updateRequest };
+module.exports = {
+  getRequests,
+  getRequestById,
+  downloadMaintenancePhoto,
+  createRequest,
+  updateRequest,
+};

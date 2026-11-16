@@ -3,6 +3,7 @@ const Admin = require('../models/Admin');
 const Tenant = require('../models/Tenant');
 const { generateAdminToken, generateTenantToken } = require('../utils/authTokens');
 const { getAllowedAdminEmail } = require('../utils/adminEmail');
+const { notifyTenantRegistration } = require('../services/registrationNotificationService');
 
 function getGoogleConfig(req, res) {
   res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
@@ -60,7 +61,7 @@ async function loginWithGoogle(req, res, next) {
       return next(authError('This Google account is already linked to another RentEase account.', 409));
     }
 
-    const isNewTenant = !account && role === 'tenant';
+    const isNewTenant = role === 'tenant' && (!account || (!account.password && !account.googleId));
     const user = account || (role === 'admin'
       ? new Admin({ name: fullName, email, password: null })
       : new Tenant({
@@ -85,15 +86,17 @@ async function loginWithGoogle(req, res, next) {
     }
     await user.save();
 
+    let registrationNotifications = null;
     if (isNewTenant) {
-      const { sendEmail, templates } = require('../services/emailService');
       try {
-        await sendEmail({
-          to: email,
-          ...templates.welcomeEmail({ fullName, email }),
-        });
+        registrationNotifications = await notifyTenantRegistration(user);
       } catch (emailError) {
-        console.error('[Auth] Google welcome email failed:', emailError.message);
+        console.error('[Auth] Google registration notifications failed:', emailError.message);
+        registrationNotifications = {
+          welcomeEmail: { status: 'failed', error: emailError.message },
+          adminNotification: { status: 'failed', error: emailError.message },
+          adminEmail: { status: 'failed', error: emailError.message },
+        };
       }
     }
 
@@ -108,6 +111,8 @@ async function loginWithGoogle(req, res, next) {
     return res.json({
       success: true,
       token: generateTenantToken(user._id),
+      emailDelivery: registrationNotifications?.welcomeEmail || { status: 'not_sent' },
+      notifications: registrationNotifications,
       tenant: { id: user._id, fullName: user.fullName, email: user.email },
     });
   } catch (error) {

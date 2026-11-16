@@ -5,7 +5,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 const fs = require('fs');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 const authRoutes = require('./routes/authRoutes');
 const apartmentRoutes = require('./routes/apartmentRoutes');
@@ -13,6 +13,7 @@ const tenantRoutes = require('./routes/tenantRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const depositRoutes = require('./routes/depositRoutes');
 const agreementRoutes = require('./routes/agreementRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 const vacatingRoutes = require('./routes/vacatingRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const maintenanceRoutes = require('./routes/maintenanceRoutes');
@@ -57,8 +58,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ── Static file serving ────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
-
 // Serve frontend from the frontend directory
 const frontendDir = path.join(__dirname, '../frontend');
 if (fs.existsSync(frontendDir)) {
@@ -72,6 +71,7 @@ app.use('/api/tenants', tenantRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/deposits', depositRoutes);
 app.use('/api/agreements', agreementRoutes);
+app.use('/api/documents', documentRoutes);
 app.use('/api/vacating', vacatingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
@@ -94,7 +94,7 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 10000 })
   .then(() => {
     console.log('MongoDB connected');
     app.listen(PORT, () => {
@@ -111,7 +111,14 @@ mongoose.connect(process.env.MONGO_URI)
     });
   })
   .catch((error) => {
-    console.error('MongoDB connection error:', error.message);
+    const authFailure = error.code === 18
+      || error.code === 8000
+      || /bad auth|authentication failed/i.test(error.message || '');
+    if (authFailure) {
+      console.error('MongoDB authentication failed. Check the database user, password, authSource, and URL-encoding of reserved credential characters.');
+    } else {
+      console.error('MongoDB connection failed:', error.name, error.code || '');
+    }
     process.exit(1);
   });
 

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Documents | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/tenant-dashboard.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Tenant Portal</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
+        <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a class="active" href="tenant-documents.html"><i class="fa-solid fa-file-arrow-up"></i> My Documents</a>
+        <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
+        <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
+        <a href="tenant-notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar">
+        <div><h2>My Documents</h2><p>Upload a PDF or image for your property manager to review.</p></div>
+      </header>
+      <section class="card" style="margin-bottom:1.5rem">
+        <form id="documentUploadForm" class="module-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="documentType">Document type</label>
+              <select id="documentType" required>
+                <option value="Identity">Identity</option>
+                <option value="Address Proof">Address Proof</option>
+                <option value="Income Proof">Income Proof</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="documentFile">File (PDF, JPEG, or PNG; max 5 MB)</label>
+              <input id="documentFile" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required />
+            </div>
+          </div>
+          <p id="documentFormMessage" role="status"></p>
+          <button type="submit" class="button primary" id="documentUploadButton">Upload for review</button>
+        </form>
+      </section>
+      <section class="table-panel card">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Document</th><th>Submitted</th><th>Review status</th><th>Review notes</th><th>Email notification</th><th>Action</th></tr></thead>
+            <tbody id="tenantDocumentsBody"><tr><td colspan="6" style="text-align:center;padding:2rem">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="../js/tenant-api.js"></script>
+  <script src="../js/agreement-documents.js"></script>
+  <script src="../js/tenant-documents.js"></script>
+</body>
+</html>

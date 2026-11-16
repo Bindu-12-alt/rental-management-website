@@ -14,6 +14,15 @@ const TenantSchema = new mongoose.Schema({
   apartment: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartment', default: null },
   rentalStartDate: { type: Date },
   status: { type: String, enum: ['Active', 'Former'], default: 'Active' },
+  welcomeEmailStatus: {
+    type: String,
+    enum: ['not_sent', 'sending', 'sent', 'failed', 'not_configured'],
+    default: 'not_sent',
+  },
+  welcomeEmailSendingAt: { type: Date },
+  welcomeEmailSentAt: { type: Date },
+  welcomeEmailError: { type: String },
+  welcomeEmailAttempts: { type: Number, default: 0 },
   history: [{ type: mongoose.Schema.Types.ObjectId, ref: 'History' }],
 }, { timestamps: true });
 

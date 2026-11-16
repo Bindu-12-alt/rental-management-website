@@ -16,6 +16,7 @@
         <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
         <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-documents.html"><i class="fa-solid fa-file-arrow-up"></i> My Documents</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
         <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
@@ -57,10 +58,19 @@
       'Rent Due': 'fa-money-bill-wave',
       'Overdue Payment': 'fa-triangle-exclamation',
       'Agreement Renewal': 'fa-file-contract',
+      'Agreement Delivered': 'fa-file-circle-check',
+      'Agreement Expired': 'fa-file-circle-exclamation',
+      'Payment Confirmation': 'fa-circle-check',
       'Vacating Request': 'fa-door-open',
       'Vacating Approved': 'fa-circle-check',
       'Tenant Message': 'fa-message',
     };
+
+    function escapeNotificationText(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[character]));
+    }
 
     async function loadNotifications() {
       try {
@@ -79,24 +89,24 @@
           const color = priorityColor[n.priority] || '#64748B';
           const isUnread = !n.read;
           return `
-            <div class="notification-item ${isUnread ? 'unread' : ''}" id="notif-${n._id}">
+            <div class="notification-item ${isUnread ? 'unread' : ''}" id="notif-${escapeNotificationText(n._id)}">
               <div style="width:40px;height:40px;border-radius:12px;background:${color}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                 <i class="fa-solid ${icon}" style="color:${color}"></i>
               </div>
               <div style="flex:1;min-width:0">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                  <strong style="font-size:14px">${n.type}</strong>
-                  <span class="status-badge" style="background:${color};font-size:11px">${n.priority}</span>
+                  <strong style="font-size:14px">${escapeNotificationText(n.type)}</strong>
+                  <span class="status-badge" style="background:${color};font-size:11px">${escapeNotificationText(n.priority)}</span>
                   ${isUnread ? '<span style="width:8px;height:8px;border-radius:50%;background:var(--primary);display:inline-block"></span>' : ''}
                 </div>
-                <p style="font-size:14px;color:var(--muted);margin:4px 0">${n.message}</p>
-                <small style="color:var(--muted)">${new Date(n.createdAt).toLocaleString()}</small>
+                <p style="font-size:14px;color:var(--muted);margin:4px 0">${escapeNotificationText(n.message)}</p>
+                <small style="color:var(--muted)">${escapeNotificationText(new Date(n.createdAt).toLocaleString())}</small>
               </div>
-              ${isUnread ? `<button class="button small outline" onclick="markRead('${n._id}')">Mark Read</button>` : '<span style="color:var(--success);font-size:13px"><i class="fa-solid fa-check"></i></span>'}
+              ${isUnread ? `<button class="button small outline" onclick="markRead('${escapeNotificationText(n._id)}')">Mark Read</button>` : '<span style="color:var(--success);font-size:13px"><i class="fa-solid fa-check"></i></span>'}
             </div>`;
         }).join('');
       } catch (err) {
-        document.getElementById('notificationsList').innerHTML = `<p style="color:var(--danger);padding:2rem;text-align:center">${err.message}</p>`;
+        document.getElementById('notificationsList').innerHTML = `<p style="color:var(--danger);padding:2rem;text-align:center">${escapeNotificationText(err.message)}</p>`;
       }
     }
 

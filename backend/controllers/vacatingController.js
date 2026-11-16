@@ -7,6 +7,61 @@ const { createNotification } = require('../services/notificationService');
 const { sendEmail, templates } = require('../services/emailService');
 const { sendWhatsApp, templates: waTemplates } = require('../services/whatsappService');
 
+async function sendVacatingDecisionEmail(requestId) {
+  const now = new Date();
+  const request = await VacatingRequest.findOneAndUpdate({
+    _id: requestId,
+    status: { $in: ['Approved', 'Rejected'] },
+    $or: [
+      { decisionEmailStatus: { $nin: ['sending', 'sent'] } },
+      { decisionEmailStatus: 'sending', decisionEmailSendingAt: { $lt: new Date(now.getTime() - 10 * 60 * 1000) } },
+      { decisionEmailStatus: 'sending', decisionEmailSendingAt: null },
+    ],
+  }, {
+    $set: { decisionEmailStatus: 'sending', decisionEmailSendingAt: now, decisionEmailError: null },
+    $inc: { decisionEmailAttempts: 1 },
+  }, { new: true });
+
+  if (!request) {
+    const current = await VacatingRequest.findById(requestId)
+      .select('decisionEmailStatus decisionEmailSentAt decisionEmailError');
+    return current
+      ? { status: current.decisionEmailStatus, sentAt: current.decisionEmailSentAt, error: current.decisionEmailError }
+      : { status: 'not_found' };
+  }
+
+  try {
+    const tenant = await Tenant.findById(request.tenant).select('fullName email');
+    if (!tenant || !tenant.email) throw new Error('Tenant has no deliverable email address');
+    const result = await sendEmail({
+      to: tenant.email,
+      ...templates.vacatingRequestEmail({
+        fullName: tenant.fullName,
+        expectedVacatingDate: request.expectedVacatingDate.toLocaleDateString(),
+        status: request.status,
+        adminComments: request.adminComments,
+      }),
+    });
+    request.decisionEmailStatus = result.success ? 'sent' : result.notConfigured ? 'not_configured' : 'failed';
+    request.decisionEmailSendingAt = null;
+    request.decisionEmailSentAt = result.success ? new Date() : undefined;
+    request.decisionEmailError = result.success ? undefined : result.error;
+    await request.save();
+    return {
+      status: request.decisionEmailStatus,
+      sentAt: request.decisionEmailSentAt,
+      error: request.decisionEmailError,
+    };
+  } catch (error) {
+    request.decisionEmailStatus = 'failed';
+    request.decisionEmailSendingAt = null;
+    request.decisionEmailError = error.message;
+    await request.save();
+    console.error('[Vacating] Decision email failed:', error.message);
+    return { status: 'failed', error: error.message };
+  }
+}
+
 function dateDiffDays(start, end) {
   const diff = end.getTime() - start.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -137,6 +192,7 @@ async function approveVacatingRequest(req, res, next) {
       err.statusCode = 400;
       return next(err);
     }
+    const alreadyApproved = request.status === 'Approved';
     request.status = 'Approved';
     await request.save();
 
@@ -167,14 +223,7 @@ async function approveVacatingRequest(req, res, next) {
     try {
       const tenantDoc = await Tenant.findById(request.tenant).select('fullName email phone');
       if (tenantDoc) {
-        const emailData = templates.vacatingRequestEmail({
-          fullName: tenantDoc.fullName,
-          expectedVacatingDate: request.expectedVacatingDate.toLocaleDateString(),
-          status: 'Approved',
-          adminComments: request.adminComments,
-        });
-        await sendEmail({ to: tenantDoc.email, ...emailData });
-        if (tenantDoc.phone) {
+        if (tenantDoc.phone && !alreadyApproved) {
           await sendWhatsApp(tenantDoc.phone, waTemplates.vacatingUpdate({
             fullName: tenantDoc.fullName,
             status: 'Approved',
@@ -186,7 +235,8 @@ async function approveVacatingRequest(req, res, next) {
       console.error('[Vacating] Approval notification failed:', notifErr.message);
     }
 
-    res.json({ success: true, data: request });
+    const emailDelivery = await sendVacatingDecisionEmail(request._id);
+    res.json({ success: true, data: request, emailDelivery });
   } catch (error) {
     next(error);
   }
@@ -221,7 +271,8 @@ async function rejectVacatingRequest(req, res, next) {
       priority: 'Medium',
     });
 
-    res.json({ success: true, data: request });
+    const emailDelivery = await sendVacatingDecisionEmail(request._id);
+    res.json({ success: true, data: request, emailDelivery });
   } catch (error) {
     next(error);
   }
@@ -287,4 +338,42 @@ async function completeVacatingRequest(req, res, next) {
   }
 }
 
-module.exports = { getVacatingRequests, getVacatingRequestById, createVacatingRequest, updateVacatingRequest, approveVacatingRequest, rejectVacatingRequest, completeVacatingRequest };
+async function retryVacatingDecisionEmail(req, res, next) {
+  try {
+    const request = await VacatingRequest.findById(req.params.id).select('status');
+    if (!request) {
+      const error = new Error('Vacating request not found');
+      error.statusCode = 404;
+      return next(error);
+    }
+    if (!['Approved', 'Rejected'].includes(request.status)) {
+      const error = new Error('Only approved or rejected requests have a decision email');
+      error.statusCode = 400;
+      return next(error);
+    }
+    const emailDelivery = await sendVacatingDecisionEmail(request._id);
+    const statusCode = emailDelivery.status === 'failed' ? 502 : emailDelivery.status === 'not_configured' ? 503 : 200;
+    const message = emailDelivery.status === 'sent'
+      ? 'Vacating decision email accepted by SMTP.'
+      : emailDelivery.error || 'Vacating decision email was not sent.';
+    res.status(statusCode).json({
+      success: emailDelivery.status === 'sent',
+      emailDelivery,
+      message,
+      ...(emailDelivery.status === 'sent' ? {} : { error: message }),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  getVacatingRequests,
+  getVacatingRequestById,
+  createVacatingRequest,
+  updateVacatingRequest,
+  approveVacatingRequest,
+  rejectVacatingRequest,
+  completeVacatingRequest,
+  retryVacatingDecisionEmail,
+};

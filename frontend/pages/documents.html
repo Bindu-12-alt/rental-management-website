@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tenant Documents | RentEase</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-brand"><span>🏠</span><div><h1>RentEase</h1><small>Rental Admin</small></div></div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+        <a href="tenants.html"><i class="fa-solid fa-user"></i> Tenants</a>
+        <a href="agreements.html"><i class="fa-solid fa-file-contract"></i> Rental Agreements</a>
+        <a class="active" href="documents.html"><i class="fa-solid fa-file-circle-check"></i> Tenant Documents</a>
+        <a href="vacating.html"><i class="fa-solid fa-door-open"></i> Vacating Requests</a>
+        <a href="maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="#" id="logoutLink"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
+      </nav>
+    </aside>
+    <main class="content-area">
+      <header class="topbar">
+        <div><h2>Tenant Documents</h2><p>Review private tenant uploads and track decision-email submission status.</p></div>
+      </header>
+      <section class="filters-panel">
+        <label for="documentStatusFilter">Status</label>
+        <select id="documentStatusFilter">
+          <option value="">All statuses</option>
+          <option value="Pending">Pending</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </section>
+      <section class="table-panel card">
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tenant</th><th>Apartment</th><th>Document</th><th>Uploaded</th>
+                <th>Review status</th><th>Email status</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="documentsTableBody">
+              <tr><td colspan="7" style="text-align:center;padding:2rem">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <p class="form-error" id="documentsPageError" role="alert"></p>
+    </main>
+  </div>
+  <script src="../js/api.js"></script>
+  <script src="../js/agreement-documents.js"></script>
+  <script src="../js/documents.js"></script>
+</body>
+</html>

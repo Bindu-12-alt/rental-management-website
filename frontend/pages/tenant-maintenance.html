@@ -16,6 +16,7 @@
         <a href="tenant-dashboard.html"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
         <a href="tenant-payments.html"><i class="fa-solid fa-money-bill-wave"></i> My Payments</a>
         <a href="tenant-agreements.html"><i class="fa-solid fa-file-contract"></i> My Agreement</a>
+        <a href="tenant-documents.html"><i class="fa-solid fa-file-arrow-up"></i> My Documents</a>
         <a href="tenant-deposits.html"><i class="fa-solid fa-wallet"></i> My Deposit</a>
         <a class="active" href="tenant-maintenance.html"><i class="fa-solid fa-screwdriver-wrench"></i> Maintenance</a>
         <a href="tenant-vacating.html"><i class="fa-solid fa-door-open"></i> Vacating</a>
@@ -124,6 +125,7 @@
   </div>
 
   <script src="../js/tenant-api.js"></script>
+  <script src="../js/private-files.js"></script>
   <script>
     tenantEnsureAuth();
     document.getElementById('logoutLink').addEventListener('click', (e) => { e.preventDefault(); tenantLogout(); });
@@ -136,6 +138,15 @@
       document.getElementById('maintenanceFormSection').classList.add('hidden');
     });
     document.getElementById('statusFilter').addEventListener('change', loadRequests);
+    document.getElementById('maintenanceBody').addEventListener('click', (event) => {
+      const button = event.target.closest('button[data-photo-index]');
+      if (!button) return;
+      downloadPrivateImage(
+        `${TENANT_API_BASE}/tenant-portal/maintenance/${encodeURIComponent(button.dataset.requestId)}/photos/${encodeURIComponent(button.dataset.photoIndex)}`,
+        'tenant_token',
+        button.dataset.filename,
+      ).catch((error) => window.alert(error.message));
+    });
 
     document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -197,18 +208,25 @@
         const statusClass = { 'Pending': 'pending', 'In Progress': 'in-progress', 'Resolved': 'completed', 'Closed': 'completed', 'Rejected': 'overdue' };
         tbody.innerHTML = data.map(r => `
           <tr>
-            <td><strong>${r.title}</strong></td>
-            <td>${r.category || 'Other'}</td>
-            <td><span class="status-badge" style="background:${r.priority === 'High' ? '#DC2626' : r.priority === 'Medium' ? '#F59E0B' : '#64748B'}">${r.priority}</span></td>
-            <td>${r.requestDate.split('T')[0]}</td>
-            <td><span class="status-badge ${statusClass[r.status] || 'pending'}">${r.status}</span></td>
-            <td>${r.adminComments || '—'}</td>
-            <td>${r.photos && r.photos.length ? r.photos.map(p => `<a href="${p}" target="_blank" style="color:var(--primary);font-size:12px"><i class="fa-solid fa-image"></i></a>`).join(' ') : '—'}</td>
+            <td><strong>${escapeTenantMaintenanceText(r.title)}</strong></td>
+            <td>${escapeTenantMaintenanceText(r.category || 'Other')}</td>
+            <td><span class="status-badge" style="background:${r.priority === 'High' ? '#DC2626' : r.priority === 'Medium' ? '#F59E0B' : '#64748B'}">${escapeTenantMaintenanceText(r.priority)}</span></td>
+            <td>${escapeTenantMaintenanceText(r.requestDate.split('T')[0])}</td>
+            <td><span class="status-badge ${statusClass[r.status] || 'pending'}">${escapeTenantMaintenanceText(r.status)}</span></td>
+            <td>${escapeTenantMaintenanceText(r.adminComments || '—')}</td>
+            <td>${r.photos && r.photos.length ? r.photos.map((_, index) => `<button type="button" class="button small outline" data-photo-index="${index}" data-request-id="${escapeTenantMaintenanceText(r._id)}" data-filename="maintenance-photo-${index + 1}">Photo ${index + 1}</button>`).join(' ') : '—'}</td>
           </tr>`).join('');
       } catch (err) {
         console.error(err);
-        document.getElementById('maintenanceBody').innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:1rem">Failed to load requests: ${err.message}</td></tr>`;
+        document.getElementById('maintenanceBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:1rem"></td></tr>';
+        document.getElementById('maintenanceBody').querySelector('td').textContent = `Failed to load requests: ${err.message}`;
       }
+    }
+
+    function escapeTenantMaintenanceText(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[character]));
     }
 
     loadRequests();

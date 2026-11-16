@@ -9,14 +9,20 @@ function attachLogout() {
   if (logoutLink) logoutLink.addEventListener('click', (event) => { event.preventDefault(); logout(); });
 }
 
+function escapeNotificationText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[character]));
+}
+
 async function loadNotifications() {
   try {
     const response = await apiRequest('/notifications');
     const container = document.getElementById('notificationsList');
     container.innerHTML = response.data.map((notification) => `
       <div class="activity-row">
-        <div><strong>${notification.type}</strong><p>${notification.message}</p></div>
-        <div class="activity-meta"><span>${notification.priority}</span><small>${new Date(notification.createdAt).toLocaleString()}</small><button class="button small" onclick="markRead('${notification._id}')">Mark Read</button></div>
+        <div><strong>${escapeNotificationText(notification.type)}</strong><p>${escapeNotificationText(notification.message)}</p></div>
+        <div class="activity-meta"><span>${escapeNotificationText(notification.priority)}</span><small>${escapeNotificationText(new Date(notification.createdAt).toLocaleString())}</small><button class="button small" onclick="markRead('${escapeNotificationText(notification._id)}')">Mark Read</button></div>
       </div>
     `).join('');
   } catch (error) {
